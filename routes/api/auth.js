@@ -80,8 +80,6 @@ router.post(
 
       await newUser.save();
 
-      return res.status(200).send({ resData: newUser });
-
       await Organization.updateOne(
         { name: organizationName },
         {
