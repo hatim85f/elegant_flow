@@ -59,8 +59,6 @@ router.post(
         organizationId = organization._id;
       }
 
-      return res.status(200).send({ resData: organizationId });
-
       const newUser = new User({
         firstName,
         lastName,
@@ -69,6 +67,8 @@ router.post(
         createdAt: Date.now(),
         organization: organizationId,
       });
+
+      return res.status(200).send({ resData: newUser });
 
       const payload = {
         user: {
