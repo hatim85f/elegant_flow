@@ -68,8 +68,6 @@ router.post(
         organization: organizationId,
       });
 
-      return res.status(200).send({ resData: newUser });
-
       const payload = {
         user: {
           id: newUser.id,
@@ -81,6 +79,8 @@ router.post(
       newUser.password = await bcrypt.hash(password, salt);
 
       await newUser.save();
+
+      return res.status(200).send({ resData: newUser });
 
       await Organization.updateOne(
         { name: organizationName },
