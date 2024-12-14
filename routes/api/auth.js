@@ -74,6 +74,12 @@ router.post(
         },
       };
 
+      const salt = await bcrypt.genSalt(10);
+
+      newUser.password = await bcrypt.hash(password, salt);
+
+      await newUser.save();
+
       await Organization.updateOne(
         { name: organizationName },
         {
@@ -82,12 +88,6 @@ router.post(
           },
         }
       );
-
-      const salt = await bcrypt.genSalt(10);
-
-      newUser.password = await bcrypt.hash(password, salt);
-
-      await newUser.save();
 
       const sanitizedUser = { ...newUser.toObject() };
       delete sanitizedUser.password;
