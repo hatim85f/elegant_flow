@@ -16,8 +16,7 @@ const OrganizationSchema = Schema({
   },
   created_by: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
+    ref: "user",
   },
   created_at: {
     type: Date,

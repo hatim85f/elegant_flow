@@ -20,33 +20,23 @@ router.post(
   [
     check("firstName", "First name is required").not().isEmpty(),
     check("lastName", "Last name is required").not().isEmpty(),
-    check("userName", "Username is required").not().isEmpty(),
-    check("email", "Please include a valid email").isEmail(),
+    check("userName", "Username is required").not().isEmail(),
     check("password", "Password must be at least 6 characters long").isLength({
       min: 6,
     }),
     check("organizationName", "Organization name is required").not().isEmpty(),
   ],
   async (req, res) => {
-    const { firstName, lastName, userName, email, password, organizationName } =
+    const { firstName, lastName, userName, password, organizationName } =
       req.body;
 
     try {
-      const isUser = await User.findOne({ email });
+      const isUser = await User.findOne({ userName });
 
       if (isUser) {
         return res.status(500).send({
           error: "Error",
           message: "User Email Already Exists",
-        });
-      }
-
-      const isNotUniqueName = await User.findOne({ userName });
-
-      if (!isNotUniqueName) {
-        return res.status(500).send({
-          error: "Error",
-          message: "User Name is taken",
         });
       }
 
@@ -73,7 +63,6 @@ router.post(
         firstName,
         lastName,
         userName,
-        email,
         role: "owner",
         createdAt: Date.now(),
         organization: organizationId,
@@ -84,6 +73,15 @@ router.post(
           id: newUser.id,
         },
       };
+
+      await Organization.updateOne(
+        { name: organizationName },
+        {
+          $set: {
+            created_by: newUser._id,
+          },
+        }
+      );
 
       const salt = await bcrypt.genSalt(10);
 
@@ -103,6 +101,7 @@ router.post(
         });
       });
     } catch (error) {
+      console.log(error.message);
       return res.status(500).send({
         error: "Server Error",
         message: "Server Error, please try again later",
