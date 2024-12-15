@@ -39,7 +39,7 @@ router.post(
       if (!isMatch) {
         return res.status(400).json({
           error: "Error",
-          message: "Invalid Credentials",
+          message: "Invalid Username or Password",
         });
       }
 
