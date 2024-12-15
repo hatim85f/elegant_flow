@@ -14,6 +14,59 @@ const secretToken =
     : config.get("jwtSecret");
 
 // @router POST api/auth
+// logging user in and getting token
+router.post(
+  "/login",
+  [
+    check("userName", "Username must be a valid email").isEmail(),
+    check("password", "Password is required").exists(),
+  ],
+  async (req, res) => {
+    const { userName, password } = req.body;
+
+    try {
+      let user = await User.findOne({ userName });
+
+      if (!user) {
+        return res.status(400).json({
+          error: "Error",
+          message: "Invalid Credentials",
+        });
+      }
+
+      const isMatch = await bcrypt.compare(password, user.password);
+
+      if (!isMatch) {
+        return res.status(400).json({
+          error: "Error",
+          message: "Invalid Credentials",
+        });
+      }
+
+      const payload = {
+        user: {
+          id: user.id,
+        },
+      };
+
+      jwt.sign(payload, secretToken, (error, token) => {
+        if (error) throw error;
+        res.json({
+          token,
+          user: user,
+        });
+      });
+    } catch (error) {
+      console.log(error.message);
+      return res.status(500).send({
+        error: "Server Error",
+        message: error.message,
+      });
+    }
+  }
+);
+
+// @router POST api/auth
 // create new user
 router.post(
   "/register",
