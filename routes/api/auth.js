@@ -45,6 +45,7 @@ router.post(
       });
 
       let organizationId;
+      let organizationNew = false;
 
       if (!organization) {
         const newOrganization = await new Organization({
@@ -55,6 +56,8 @@ router.post(
         await newOrganization.save();
 
         organizationId = newOrganization._id;
+
+        organizationName = true;
       } else {
         organizationId = organization._id;
       }
@@ -63,6 +66,7 @@ router.post(
         firstName,
         lastName,
         userName,
+        email: userName,
         role: "owner",
         createdAt: Date.now(),
         organization: organizationId,
@@ -80,14 +84,16 @@ router.post(
 
       await newUser.save();
 
-      await Organization.updateOne(
-        { name: organizationName },
-        {
-          $set: {
-            created_by: newUser._id,
-          },
-        }
-      );
+      if (organizationNew) {
+        await Organization.updateOne(
+          { name: organizationName },
+          {
+            $set: {
+              created_by: newUser._id,
+            },
+          }
+        );
+      }
 
       const sanitizedUser = { ...newUser.toObject() };
       delete sanitizedUser.password;
