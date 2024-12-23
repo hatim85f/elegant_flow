@@ -52,6 +52,34 @@ const UserSchema = Schema({
     default: "active",
     enum: ["active", "inactive"],
   },
+  jobTitle: {
+    type: String,
+    required: false,
+  },
+  department: {
+    type: String,
+    required: false,
+  },
+  employmentType: {
+    type: String,
+    enum: ["full-time", "part-time", "contractor", "intern"],
+    default: "full-time",
+  },
+  officeLocation: {
+    type: String,
+    required: false,
+  },
+  subordinates: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+    },
+  ],
+  accessLevel: {
+    type: String,
+    enum: ["admin", "manager", "employee"],
+    default: "employee",
+  },
   profile: {
     firstName: {
       type: String,
@@ -67,21 +95,6 @@ const UserSchema = Schema({
         },
         message: "Invalid phone number format",
       },
-    },
-    address: {
-      type: String,
-    },
-    city: {
-      type: String,
-    },
-    state: {
-      type: String,
-    },
-    country: {
-      type: String,
-    },
-    zip: {
-      type: String,
     },
     avatar: {
       type: String,
