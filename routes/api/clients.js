@@ -8,7 +8,7 @@ const Organization = require("../../models/Organization");
 // @route   POST api/clients
 // @desc    Create a client with the owner for fast distribution
 // @access  Private
-router.post("/add_clients", auth, async (req, res) => {
+router.post("/add_short_client", auth, async (req, res) => {
   const { clientName, clientEmail, clientPhone, userId } = req.body;
 
   try {
