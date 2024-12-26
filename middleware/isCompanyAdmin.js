@@ -1,4 +1,4 @@
-const User = require("../models/Users");
+const User = require("../models/User");
 
 // Create a middleware function to check if a user is authorized (SuperAdmin or Organizer)
 module.exports = async (req, res, next) => {
