@@ -4,13 +4,13 @@ const auth = require("../../middleware/auth");
 
 const Clients = require("../../models/Clients");
 const Organization = require("../../models/Organization");
-const User = require("../../models/User");
 
 // @route   POST api/clients
 // @desc    Create a client with the owner for fast distribution
 // @access  Private
-router.post("/add_short_client", auth, async (req, res) => {
-  const { clientName, clientEmail, clientPhone, userId } = req.body;
+router.post("/add_short_clien/:userId", auth, async (req, res) => {
+  const { clientName, clientEmail, clientPhone } = req.body;
+  const { userId } = req.params;
 
   try {
     const organization = await Organization.findOne({ created_by: userId });
@@ -18,10 +18,6 @@ router.post("/add_short_client", auth, async (req, res) => {
     const organizationUsers = await User.find({
       organization: organization._id,
       role: "employee",
-    });
-
-    const user = await User.findOne({
-      _id: userId,
     });
 
     // const isClient = await Clients.findOne({
@@ -35,42 +31,42 @@ router.post("/add_short_client", auth, async (req, res) => {
     //   });
     // }
 
-    // let newClient;
+    let newClient;
 
-    // if (organizationUsers.length > 0) {
-    //   // Assign the client randomly to one of the organization users by making sure every user will have the same number of clients
+    if (organizationUsers.length > 0) {
+      // Assign the client randomly to one of the organization users by making sure every user will have the same number of clients
 
-    //   const randomUserIndex = Math.floor(
-    //     Math.random() * organizationUsers.length
-    //   );
-    //   const randomUser = organizationUsers[randomUserIndex];
-    //   const assignedTo = randomUser._id;
+      const randomUserIndex = Math.floor(
+        Math.random() * organizationUsers.length
+      );
+      const randomUser = organizationUsers[randomUserIndex];
+      const assignedTo = randomUser._id;
 
-    //   newClient = new Clients({
-    //     clientName: clientName,
-    //     clientEmail: clientEmail,
-    //     clientPhone: clientPhone,
-    //     assignedTo: assignedTo,
-    //     clientForOrganization: organization._id,
-    //     clientCreatedBy: userId,
-    //     clientUpdatedBy: userId,
-    //   });
-    // } else {
-    //   newClient = new Clients({git add
-    //     clientName: clientName,
-    //     clientEmail: clientEmail,
-    //     clientPhone: clientPhone,
-    //     clientForOrganization: organization._id,
-    //     clientCreatedBy: userId,
-    //     clientUpdatedBy: userId,
-    //   });
-    // }
+      newClient = new Clients({
+        clientName: clientName,
+        clientEmail: clientEmail,
+        clientPhone: clientPhone,
+        assignedTo: assignedTo,
+        clientForOrganization: organization._id,
+        clientCreatedBy: userId,
+        clientUpdatedBy: userId,
+      });
+    } else {
+      newClient = new Clients({
+        clientName: clientName,
+        clientEmail: clientEmail,
+        clientPhone: clientPhone,
+        clientForOrganization: organization._id,
+        clientCreatedBy: userId,
+        clientUpdatedBy: userId,
+      });
+    }
 
-    // await Clients.insertMany(newClient);
+    await Clients.insertMany(newClient);
 
     res.json({
-      message: `${userId}`,
-      client: user,
+      message: "Client created successfully",
+      client: newClient,
     });
   } catch (err) {
     console.error(err.message);
