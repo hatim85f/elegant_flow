@@ -19,6 +19,17 @@ router.post("/add_short_client", auth, async (req, res) => {
       role: "employee",
     });
 
+    const isClient = await Clients.findOne({
+      clientEmail: clientEmail,
+      clientForOrganization: organization._id,
+    });
+
+    if (isClient) {
+      return res.status(400).json({
+        message: "Client already exists",
+      });
+    }
+
     let newClient;
 
     if (organizationUsers.length > 0) {
