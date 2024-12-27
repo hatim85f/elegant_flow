@@ -30,41 +30,41 @@ router.post("/add_short_client", auth, async (req, res) => {
     //   });
     // }
 
-    let newClient;
+    // let newClient;
 
-    if (organizationUsers.length > 0) {
-      // Assign the client randomly to one of the organization users by making sure every user will have the same number of clients
+    // if (organizationUsers.length > 0) {
+    //   // Assign the client randomly to one of the organization users by making sure every user will have the same number of clients
 
-      const randomUserIndex = Math.floor(
-        Math.random() * organizationUsers.length
-      );
-      const randomUser = organizationUsers[randomUserIndex];
-      const assignedTo = randomUser._id;
+    //   const randomUserIndex = Math.floor(
+    //     Math.random() * organizationUsers.length
+    //   );
+    //   const randomUser = organizationUsers[randomUserIndex];
+    //   const assignedTo = randomUser._id;
 
-      newClient = new Clients({
-        clientName: clientName,
-        clientEmail: clientEmail,
-        clientPhone: clientPhone,
-        assignedTo: assignedTo,
-        clientForOrganization: organization._id,
-        clientCreatedBy: userId,
-        clientUpdatedBy: userId,
-      });
-    } else {
-      newClient = new Clients({
-        clientName: clientName,
-        clientEmail: clientEmail,
-        clientPhone: clientPhone,
-        clientForOrganization: organization._id,
-        clientCreatedBy: userId,
-        clientUpdatedBy: userId,
-      });
-    }
+    //   newClient = new Clients({
+    //     clientName: clientName,
+    //     clientEmail: clientEmail,
+    //     clientPhone: clientPhone,
+    //     assignedTo: assignedTo,
+    //     clientForOrganization: organization._id,
+    //     clientCreatedBy: userId,
+    //     clientUpdatedBy: userId,
+    //   });
+    // } else {
+    //   newClient = new Clients({
+    //     clientName: clientName,
+    //     clientEmail: clientEmail,
+    //     clientPhone: clientPhone,
+    //     clientForOrganization: organization._id,
+    //     clientCreatedBy: userId,
+    //     clientUpdatedBy: userId,
+    //   });
+    // }
 
-    await Clients.insertMany(newClient);
+    // await Clients.insertMany(newClient);
 
     res.json({
-      message: "Client created successfully",
+      message: `${userId}`,
       client: newClient,
     });
   } catch (err) {
