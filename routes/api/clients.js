@@ -4,6 +4,7 @@ const auth = require("../../middleware/auth");
 
 const Clients = require("../../models/Clients");
 const Organization = require("../../models/Organization");
+const User = require("../../models/User");
 
 // @route   POST api/clients
 // @desc    Create a client with the owner for fast distribution
@@ -17,6 +18,10 @@ router.post("/add_short_client", auth, async (req, res) => {
     const organizationUsers = await User.find({
       organization: organization._id,
       role: "employee",
+    });
+
+    const user = await User.findOne({
+      _id: userId,
     });
 
     // const isClient = await Clients.findOne({
@@ -51,7 +56,7 @@ router.post("/add_short_client", auth, async (req, res) => {
     //     clientUpdatedBy: userId,
     //   });
     // } else {
-    //   newClient = new Clients({
+    //   newClient = new Clients({git add
     //     clientName: clientName,
     //     clientEmail: clientEmail,
     //     clientPhone: clientPhone,
@@ -65,7 +70,7 @@ router.post("/add_short_client", auth, async (req, res) => {
 
     res.json({
       message: `${userId}`,
-      client: newClient,
+      client: user,
     });
   } catch (err) {
     console.error(err.message);
