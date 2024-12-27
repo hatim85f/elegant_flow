@@ -70,7 +70,10 @@ router.post("/add_short_clien/:userId", auth, async (req, res) => {
     });
   } catch (err) {
     console.error(err.message);
-    res.status(500).send("Server Error");
+    res.status(500).send({
+      error: "ERROR!",
+      message: error.message,
+    });
   }
 });
 

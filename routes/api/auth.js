@@ -93,7 +93,7 @@ router.post(
       console.log(error.message);
       return res.status(500).send({
         error: "Server Error",
-        message: error.message,
+        message: "Server Error, please try again",
       });
     }
   }
@@ -196,7 +196,7 @@ router.post(
       console.log(error.message);
       return res.status(500).send({
         error: "Server Error",
-        message: error.message,
+        message: "Server Error, please try again",
       });
     }
   }
@@ -280,7 +280,7 @@ router.put("/:userId", auth, async (req, res) => {
   } catch (error) {
     return res.status(500).send({
       error: "ERROR!",
-      message: error.message,
+      message: "Server Error, please try again",
     });
   }
 });
@@ -339,7 +339,7 @@ router.put("/change-password/:userId", auth, async (req, res) => {
   } catch (error) {
     return res.status(500).send({
       error: "ERROR!",
-      message: error.message,
+      message: "Server Error, please try again",
     });
   }
 });
