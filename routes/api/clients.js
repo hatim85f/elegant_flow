@@ -8,7 +8,7 @@ const Organization = require("../../models/Organization");
 // @route   POST api/clients
 // @desc    Create a client with the owner for fast distribution
 // @access  Private
-router.post("/add_short_clien/:userId", auth, async (req, res) => {
+router.post("/add_short_client/:userId", auth, async (req, res) => {
   const { clientName, clientEmail, clientPhone } = req.body;
   const { userId } = req.params;
 
@@ -20,16 +20,16 @@ router.post("/add_short_clien/:userId", auth, async (req, res) => {
       role: "employee",
     });
 
-    // const isClient = await Clients.findOne({
-    //   clientEmail: clientEmail,
-    //   clientForOrganization: organization._id,
-    // });
+    const isClient = await Clients.findOne({
+      clientEmail: clientEmail,
+      clientForOrganization: organization._id,
+    });
 
-    // if (isClient) {
-    //   return res.status(400).json({
-    //     message: "Client already exists",
-    //   });
-    // }
+    if (isClient) {
+      return res.status(400).json({
+        message: "Client already exists",
+      });
+    }
 
     let newClient;
 
@@ -62,7 +62,7 @@ router.post("/add_short_clien/:userId", auth, async (req, res) => {
       });
     }
 
-    await Clients.insertMany(newClient);
+    await Clients.save();
 
     res.json({
       message: "Client created successfully",
