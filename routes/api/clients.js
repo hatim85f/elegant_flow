@@ -13,7 +13,9 @@ router.post("/add_short_client/:userId", auth, async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const organization = await Organization.findOne({ created_by: userId });
+    const organization = await Organization.findOne({
+      created_by: userId,
+    });
 
     const organizationUsers = await User.find({
       organization: organization._id,
@@ -62,14 +64,13 @@ router.post("/add_short_client/:userId", auth, async (req, res) => {
       });
     }
 
-    await Clients.save();
+    await Clients.insertMany([newClient]);
 
     res.json({
       message: "Client created successfully",
       client: newClient,
     });
   } catch (err) {
-    console.error(err.message);
     res.status(500).send({
       error: "ERROR!",
       message: err.message,
