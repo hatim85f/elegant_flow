@@ -13,12 +13,10 @@ router.post("/add_short_client/:userId", auth, async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const organization = await Organization.findOne({
-      created_by: userId,
-    });
+    const userData = await User.findOne({ _id: userId });
 
     const organizationUsers = await User.find({
-      organization: organization._id,
+      organization: userData.organization,
       role: "employee",
     });
 
