@@ -214,37 +214,37 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
   try {
     const user = await User.findOne({ _id: userId });
 
-    // const isPreviousUser = await User.findOne({ email: email });
+    const isPreviousUser = await User.findOne({ email: email });
 
-    // if (isPreviousUser) {
-    //   return res.status(400).send({
-    //     error: "ERROR!",
-    //     message: "User already exists",
-    //   });
-    // }
+    if (isPreviousUser) {
+      return res.status(400).send({
+        error: "ERROR!",
+        message: "User already exists",
+      });
+    }
 
-    // const newUser = new User({
-    //   firstName: firstName,
-    //   lastName: lastName,
-    //   userName: email,
-    //   email: email,
-    //   role: role,
-    //   createdAt: Date.now(),
-    //   organization: user.organization,
-    //   parentId: userId,
-    // });
+    const newUser = new User({
+      firstName: firstName,
+      lastName: lastName,
+      userName: email,
+      email: email,
+      role: role,
+      createdAt: Date.now(),
+      organization: user.organization,
+      parentId: userId,
+    });
 
-    // const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(10);
 
-    // newUser.password = await bcrypt.hash(`${firstName}${lastName}`, salt);
+    newUser.password = await bcrypt.hash(`${firstName}${lastName}`, salt);
 
-    // await newUser.save();
+    await newUser.save();
 
     sgMail.setApiKey(mailAPIKey);
 
     const msg = {
       to: email,
-      from: user.email,
+      from: "info@codexpandit.com",
       templateId: "d-8fe4f1a2c4c34dc7907d04659e164e2d",
       dynamic_template_data: {
         subject: "Invitation to join the team",
@@ -256,30 +256,11 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
       },
     };
 
-    sgMail
-      .send(msg)
-      .then((response) => {
-        if (response[0]?.statusCode === 202) {
-          // SendGrid returns 202 for successful email acceptance
-          return res.status(200).send({
-            message: `Email Sent Successfully to ${firstName} ${lastName}`,
-          });
-        } else {
-          return res.status(500).send({
-            message: "Unexpected status code:" + response[0]?.statusCode,
-          });
-        }
-      })
-      .catch((error) => {
-        console.error("Error sending email:", error);
-        if (error.response) {
-          console.error("SendGrid response:", error.response.body); // Log detailed error response
-        }
-      });
+    sgMail.send(msg);
 
-    // return res.status(200).send({
-    //   message: `User ${firstName} ${lastName} has been invited to join the team`,
-    // });
+    return res.status(200).send({
+      message: `User ${firstName} ${lastName} has been invited to join the team`,
+    });
   } catch (error) {
     return res.status(500).send({
       error: "ERROR!",
