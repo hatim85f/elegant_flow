@@ -264,7 +264,7 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
   } catch (error) {
     return res.status(500).send({
       error: "ERROR!",
-      message: "Server Error, please try again",
+      message: error.message,
     });
   }
 });
