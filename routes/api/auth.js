@@ -223,10 +223,6 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
       });
     }
 
-    return res.status(200).send({
-      message: `${user.firstName} ${user.lastName}`,
-    });
-
     const newUser = new User({
       firstName: firstName,
       lastName: lastName,
