@@ -103,7 +103,7 @@ const UserSchema = Schema({
   settings: {
     theme: {
       type: String,
-      default: "light",
+      default: "dark",
       enum: ["light", "dark"],
     },
     mode: {

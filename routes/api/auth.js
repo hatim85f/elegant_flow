@@ -9,10 +9,14 @@ const { check, validationResult } = require("express-validator");
 const User = require("../../models/User");
 const Organization = require("../../models/Organization");
 
+const sgMail = require("@sendgrid/mail");
+
 const secretToken =
   process.env.NODE_ENV === "production"
     ? process.env.JWT_SECRET
     : config.get("jwtSecret");
+
+const mailAPIKey = process.env.mail_API;
 
 // @router GET api/auth
 // get user data
@@ -201,6 +205,58 @@ router.post(
     }
   }
 );
+
+// @router POST api/auth
+// create new user
+router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
+  const { firstName, lastName, email, role, userId } = req.body;
+
+  try {
+    const user = await User.findOne({ _id: userId });
+
+    const newUser = new User({
+      firstName: firstName,
+      lastName: lastName,
+      userName: email,
+      email: email,
+      role: role,
+      createdAt: Date.now(),
+      organization: user.organization,
+      parentId: userId,
+    });
+
+    newUser.password = await bcrypt.hash(`${firstName}${lastName}`, 10);
+
+    await newUser.save();
+
+    sgMail.setApiKey(mailAPIKey);
+
+    const msg = {
+      to: email,
+      from: user.email,
+      templateId: "d-8fe4f1a2c4c34dc7907d04659e164e2d",
+      dynamic_template_data: {
+        subject: "Invitation to join the team",
+        firstName: firstName,
+        lastName: lastName,
+        manager_name: `${user.firstName} ${user.lastName}`,
+        username: email,
+        password: `${firstName}${lastName}`,
+      },
+    };
+
+    sgMail.send(msg);
+
+    return res.status(200).send({
+      message: `User ${firstName} ${lastName} has been invited to join the team`,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error: "ERROR!",
+      message: "Server Error, please try again",
+    });
+  }
+});
 
 // @router PUT api/auth
 // edit current user
