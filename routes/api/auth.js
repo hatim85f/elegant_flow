@@ -223,6 +223,10 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
       });
     }
 
+    return res.status(200).send({
+      message: `First Name: ${firstName}, Last Name: ${lastName}, Email: ${email}, Role: ${role}, User ID: ${userId}`,
+    });
+
     const newUser = new User({
       firstName: firstName,
       lastName: lastName,
@@ -240,23 +244,23 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
 
     await newUser.save();
 
-    sgMail.setApiKey(mailAPIKey);
+    // sgMail.setApiKey(mailAPIKey);
 
-    const msg = {
-      to: email,
-      from: "info@codexpandit.com",
-      templateId: "d-8fe4f1a2c4c34dc7907d04659e164e2d",
-      dynamic_template_data: {
-        subject: "Invitation to join the team",
-        firstName: firstName,
-        lastName: lastName,
-        manager_name: `${user.firstName} ${user.lastName}`,
-        username: email,
-        password: `${firstName}${lastName}`,
-      },
-    };
+    // const msg = {
+    //   to: email,
+    //   from: "info@codexpandit.com",
+    //   templateId: "d-8fe4f1a2c4c34dc7907d04659e164e2d",
+    //   dynamic_template_data: {
+    //     subject: "Invitation to join the team",
+    //     firstName: firstName,
+    //     lastName: lastName,
+    //     manager_name: `${user.firstName} ${user.lastName}`,
+    //     username: email,
+    //     password: `${firstName}${lastName}`,
+    //   },
+    // };
 
-    sgMail.send(msg);
+    // sgMail.send(msg);
 
     return res.status(200).send({
       message: `User ${firstName} ${lastName} has been invited to join the team`,
