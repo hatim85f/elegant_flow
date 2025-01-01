@@ -277,9 +277,9 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
         }
       });
 
-    return res.status(200).send({
-      message: `User ${firstName} ${lastName} has been invited to join the team`,
-    });
+    // return res.status(200).send({
+    //   message: `User ${firstName} ${lastName} has been invited to join the team`,
+    // });
   } catch (error) {
     return res.status(500).send({
       error: "ERROR!",
