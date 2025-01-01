@@ -231,6 +231,13 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
 
     sgMail.setApiKey(mailAPIKey);
 
+    if (!mailAPIKey) {
+      return res.status(500).send({
+        error: "ERROR!",
+        message: "Mail API Key not found",
+      });
+    }
+
     const msg = {
       to: email,
       from: user.email,
