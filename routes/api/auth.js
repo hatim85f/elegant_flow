@@ -214,6 +214,15 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
   try {
     const user = await User.findOne({ _id: userId });
 
+    const isPreviousUser = await User.findOne({ email: email });
+
+    if (isPreviousUser) {
+      return res.status(400).send({
+        error: "ERROR!",
+        message: "User already exists",
+      });
+    }
+
     const newUser = new User({
       firstName: firstName,
       lastName: lastName,
@@ -225,18 +234,13 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
       parentId: userId,
     });
 
-    newUser.password = await bcrypt.hash(`${firstName}${lastName}`, 10);
+    const salt = await bcrypt.genSalt(10);
+
+    newUser.password = await bcrypt.hash(`${firstName}${lastName}`, salt);
 
     await newUser.save();
 
     sgMail.setApiKey(mailAPIKey);
-
-    if (!mailAPIKey) {
-      return res.status(500).send({
-        error: "ERROR!",
-        message: "Mail API Key not found",
-      });
-    }
 
     const msg = {
       to: email,
