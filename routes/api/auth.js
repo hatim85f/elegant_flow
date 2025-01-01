@@ -97,7 +97,7 @@ router.post(
       console.log(error.message);
       return res.status(500).send({
         error: "Server Error",
-        message: "Server Error, please try again",
+        message: error.message,
       });
     }
   }
