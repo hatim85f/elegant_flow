@@ -4,7 +4,7 @@ const config = require("config");
 module.exports = (req, res, next) => {
   const setcretToken =
     process.env.NODE_ENV === "production"
-      ? process.env.jwtSecret
+      ? process.env.JWT_SECRET
       : config.get("jwtSecret");
   // Get token from header
   const token = req.header("x-auth-token");

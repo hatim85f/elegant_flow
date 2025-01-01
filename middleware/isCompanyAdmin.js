@@ -12,9 +12,8 @@ module.exports = async (req, res, next) => {
   }
 
   const user = await User.findOne({ _id: userId });
-  const isAdmin = user.isCompanyAdmin;
 
-  if (isAdmin) {
+  if (user.role === "owner" || user.role === "manager") {
     // If the user is authorized, continue to the next middleware/route handler
     next();
   } else {
