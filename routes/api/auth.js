@@ -272,7 +272,7 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
 // @router PUT api/auth
 // edit current user
 // user changing his details
-router.put("/userId", auth, async (req, res) => {
+router.put("/:userId", auth, async (req, res) => {
   const { userId } = req.params;
   const {
     avatar,
@@ -293,7 +293,6 @@ router.put("/userId", auth, async (req, res) => {
       { _id: userId },
       {
         $set: {
-          avatar,
           firstName,
           lastName,
           userName: email,
@@ -304,6 +303,7 @@ router.put("/userId", auth, async (req, res) => {
             firstName,
             lastName,
             phone: phoneNumber,
+            avatar,
           },
           social: {
             facebook,
