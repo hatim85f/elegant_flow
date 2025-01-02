@@ -240,23 +240,23 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
 
     await newUser.save();
 
-    // sgMail.setApiKey(mailAPIKey);
+    sgMail.setApiKey(mailAPIKey);
 
-    // const msg = {
-    //   to: email,
-    //   from: "info@codexpandit.com",
-    //   templateId: "d-8fe4f1a2c4c34dc7907d04659e164e2d",
-    //   dynamic_template_data: {
-    //     subject: "Invitation to join the team",
-    //     firstName: firstName,
-    //     lastName: lastName,
-    //     manager_name: `${user.firstName} ${user.lastName}`,
-    //     username: email,
-    //     password: `${firstName}${lastName}`,
-    //   },
-    // };
+    const msg = {
+      to: email,
+      from: "info@codexpandit.com",
+      templateId: "d-8fe4f1a2c4c34dc7907d04659e164e2d",
+      dynamic_template_data: {
+        subject: "Invitation to join the team",
+        firstName: firstName,
+        lastName: lastName,
+        manager_name: `${user.firstName} ${user.lastName}`,
+        username: email,
+        password: `${firstName}${lastName}`,
+      },
+    };
 
-    // sgMail.send(msg);
+    sgMail.send(msg);
 
     return res.status(200).send({
       message: `User ${firstName} ${lastName} has been invited to join the team`,
@@ -264,90 +264,62 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
   } catch (error) {
     return res.status(500).send({
       error: "ERROR!",
-      message: error.message,
+      message: "Server Error, Please try again later",
     });
   }
 });
 
 // @router PUT api/auth
 // edit current user
-router.put("/:userId", auth, async (req, res) => {
+// user changing his details
+router.put("/userId", auth, async (req, res) => {
   const { userId } = req.params;
-  const { userDetails } = req.body;
+  const {
+    firstName,
+    lastName,
+    email,
+    phoneNumber,
+    department,
+    officeLocation,
+    facebook,
+    x,
+    linkedin,
+    instagram,
+  } = req.body;
 
   try {
-    const isUser = await User.findOne({ _id: userId });
-
-    if (!isUser) {
-      return res.status(400).send({
-        error: "ERROR!",
-        message: "User Not Found",
-      });
-    }
-
-    const updatedFields = {};
-
-    if (userDetails.employmentType)
-      updatedFields.employmentType = userDetails.employmentType;
-    if (userDetails.officeLocation)
-      updatedFields.officeLocation = userDetails.officeLocation;
-    if (userDetails.subordinates)
-      updatedFields.subordinates = userDetails.subordinates;
-    if (userDetails.accessLevel)
-      updatedFields.accessLevel = userDetails.accessLevel;
-
-    if (userDetails.profile) {
-      if (userDetails.profile.firstName)
-        updatedFields["profile.firstName"] = userDetails.profile.firstName;
-      if (userDetails.profile.lastName)
-        updatedFields["profile.lastName"] = userDetails.profile.lastName;
-      if (userDetails.profile.phone)
-        updatedFields["profile.phone"] = userDetails.profile.phone;
-      if (userDetails.profile.avatar)
-        updatedFields["profile.avatar"] = userDetails.profile.avatar;
-    }
-
-    if (userDetails.settings) {
-      if (userDetails.settings.theme)
-        updatedFields["settings.theme"] = userDetails.settings.theme;
-      if (userDetails.settings.mode)
-        updatedFields["settings.mode"] = userDetails.settings.mode;
-      if (userDetails.settings.chatOn !== undefined)
-        updatedFields["settings.chatOn"] = userDetails.settings.chatOn;
-      if (userDetails.settings.notificationsOn !== undefined)
-        updatedFields["settings.notificationsOn"] =
-          userDetails.settings.notificationsOn;
-      if (userDetails.settings.newsletterOn !== undefined)
-        updatedFields["settings.newsletterOn"] =
-          userDetails.settings.newsletterOn;
-    }
-
-    if (userDetails.social) {
-      if (userDetails.social.facebook)
-        updatedFields["social.facebook"] = userDetails.social.facebook;
-      if (userDetails.social.x)
-        updatedFields["social.x"] = userDetails.social.x;
-      if (userDetails.social.linkedin)
-        updatedFields["social.linkedin"] = userDetails.social.linkedin;
-      if (userDetails.social.instagram)
-        updatedFields["social.instagram"] = userDetails.social.instagram;
-    }
-
-    // Update the user
-    const updatedUser = await User.updateOne(
+    await User.updateOne(
       { _id: userId },
-      { $set: updatedFields }
+      {
+        $set: {
+          firstName,
+          lastName,
+          userName: email,
+          email,
+          department,
+          officeLocation,
+          profile: {
+            firstName,
+            lastName,
+            phone: phoneNumber,
+          },
+          social: {
+            facebook,
+            x,
+            linkedin,
+            instagram,
+          },
+        },
+      }
     );
 
     return res.status(200).send({
-      success: true,
-      message: "User updated successfully",
-      updatedFields,
+      message: "Your Profile updated Successfully",
     });
   } catch (error) {
     return res.status(500).send({
       error: "ERROR!",
-      message: "Server Error, please try again",
+      message: "Server Error, Please try again later",
     });
   }
 });
