@@ -275,6 +275,7 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
 router.put("/userId", auth, async (req, res) => {
   const { userId } = req.params;
   const {
+    avatar,
     firstName,
     lastName,
     email,
@@ -292,6 +293,7 @@ router.put("/userId", auth, async (req, res) => {
       { _id: userId },
       {
         $set: {
+          avatar,
           firstName,
           lastName,
           userName: email,
