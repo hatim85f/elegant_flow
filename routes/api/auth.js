@@ -315,8 +315,11 @@ router.put("/:userId", auth, async (req, res) => {
       }
     );
 
+    const user = await User.findOne({ _id: userId });
+
     return res.status(200).send({
       message: "Your Profile updated Successfully",
+      user: user,
     });
   } catch (error) {
     return res.status(500).send({
