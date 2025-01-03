@@ -114,6 +114,8 @@ router.get("/:userId", auth, async (req, res) => {
                     },
                   },
                 },
+                email: "$$subMember.email",
+                phoneNumber: "$$subMember.phone",
               },
             },
           },
