@@ -81,7 +81,7 @@ router.get("/:userId", auth, async (req, res) => {
               as: "subMember",
               in: {
                 _id: "$$subMember._id",
-                avatar: "$$subMember.avatar",
+                avatar: "$$subMember.profile.avatar",
                 firstName: "$$subMember.firstName",
                 lastName: "$$subMember.lastName",
                 role: {
@@ -115,7 +115,7 @@ router.get("/:userId", auth, async (req, res) => {
                   },
                 },
                 email: "$$subMember.email",
-                phoneNumber: "$$subMember.phone",
+                phone: "$$subMember.profile.phone",
               },
             },
           },
@@ -138,6 +138,8 @@ router.get("/:userId", auth, async (req, res) => {
           teamMembers: 1,
           customersNumber: 1,
           subTeam: 1,
+          email: 1,
+          phone: 1,
         },
       },
     ];
