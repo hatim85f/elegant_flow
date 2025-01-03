@@ -214,7 +214,10 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
   try {
     const user = await User.findOne({ _id: userId });
 
-    const isPreviousUser = await User.findOne({ email: email });
+    const isPreviousUser = await User.findOne({
+      email: email,
+      organization: user.organization,
+    });
 
     if (isPreviousUser) {
       return res.status(400).send({
