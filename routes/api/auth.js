@@ -209,7 +209,7 @@ router.post(
 // @router POST api/auth
 // create new user
 router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
-  const { firstName, lastName, email, role, userId } = req.body;
+  const { firstName, lastName, email, role, userId, parentId } = req.body;
 
   try {
     const user = await User.findOne({ _id: userId });
@@ -231,7 +231,7 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
       role: role,
       createdAt: Date.now(),
       organization: user.organization,
-      parentId: userId,
+      parentId: parentId ? parentId : userId,
     });
 
     const salt = await bcrypt.genSalt(10);
