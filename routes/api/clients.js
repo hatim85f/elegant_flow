@@ -50,6 +50,20 @@ router.get("/all/:userId", auth, async (req, res) => {
         },
       },
       {
+        $lookup: {
+          from: "users",
+          localField: "clientCreatedBy",
+          foreignField: "_id",
+          as: "clientCreatedByUser",
+        },
+      },
+      {
+        $unwind: {
+          path: "$clientCreatedByUser",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
         $addFields: {
           handledBy: {
             $concat: [
@@ -73,7 +87,13 @@ router.get("/all/:userId", auth, async (req, res) => {
                 clientStatus: 1,
                 assignedTo: 1,
                 clientForOrganization: 1,
-                clientCreatedBy: 1,
+                clientCreatedBy: {
+                  $concat: [
+                    "$clientCreatedByUser.firstName",
+                    " ",
+                    "$clientCreatedByUser.lastName",
+                  ],
+                },
                 clientUpdatedBy: 1,
                 clientCreatedAt: 1,
                 clientUpdatedAt: 1,
@@ -92,7 +112,13 @@ router.get("/all/:userId", auth, async (req, res) => {
                 clientStatus: 1,
                 assignedTo: 1, // Add assignedTo (ID)
                 clientForOrganization: 1,
-                clientCreatedBy: 1,
+                clientCreatedBy: {
+                  $concat: [
+                    "$clientCreatedByUser.firstName",
+                    " ",
+                    "$clientCreatedByUser.lastName",
+                  ],
+                },
                 clientUpdatedBy: 1,
                 clientCreatedAt: 1,
                 clientUpdatedAt: 1,
