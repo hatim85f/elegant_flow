@@ -80,4 +80,20 @@ router.post("/add_short_client/:userId", auth, async (req, res) => {
   }
 });
 
+router.delete("/edit", async (req, res) => {
+  try {
+    const clients = await Clients.deleteMany({}, { clientStatus: "inactive" });
+
+    return res.status(200).send({
+      clients,
+      message: "All clients are inactive now",
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error: "ERROR!",
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;

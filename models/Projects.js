@@ -1,52 +1,55 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const ClientsSchema = Schema({
-  clientName: {
+const ProjectSchema = Schema({
+  projectName: {
     type: String,
     required: true,
   },
-  clientEmail: {
+  projectDescription: {
     type: String,
   },
-  clientPhone: {
-    type: String,
-    required: true,
-  },
-  assignedTo: {
+  projectClient: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "user",
+    ref: "client",
   },
-  clientProject: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "project",
+  projectBudget: {
+    type: Number,
+    default: 0,
   },
-  clientStatus: {
+  projectStatus: {
     type: String,
-    default: "inactive",
+    default: "active",
     enum: ["active", "inactive"],
   },
-  clientForOrganization: {
+  projectForOrganization: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "organization",
     required: true,
   },
-  clientCreatedAt: {
+  projectDeadline: {
     type: Date,
-    default: Date.now,
   },
-  clientUpdatedAt: {
-    type: Date,
-    default: Date.now,
-  },
-  clientCreatedBy: {
+  projectAssignedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "user",
   },
-  clientUpdatedBy: {
+  projectCreatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  projectUpdatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  projectCreatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "user",
+  },
+  projectUpdatedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "user",
   },
 });
 
-module.exports = Clients = mongoose.model("clients", ClientsSchema);
+module.exports = Project = mongoose.model("project", ProjectSchema);
