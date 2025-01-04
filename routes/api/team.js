@@ -124,7 +124,7 @@ router.get("/:userId", auth, async (req, res) => {
       {
         $project: {
           _id: 1,
-          avatar: 1,
+          avatar: "$profile.avatar",
           firstName: 1,
           lastName: 1,
           role: {
