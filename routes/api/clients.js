@@ -38,13 +38,22 @@ router.post("/add_short_client/:userId", auth, async (req, res) => {
     let newClient;
 
     if (organizationUsers.length > 0) {
-      // Assign the client randomly to one of the organization users by making sure every user will have the same number of clients
-
-      const randomUserIndex = Math.floor(
-        Math.random() * organizationUsers.length
+      // Find the employee with the least number of clients
+      const userClientCounts = await Promise.all(
+        organizationUsers.map(async (user) => {
+          const clientCount = await Clients.countDocuments({
+            assignedTo: user._id,
+          });
+          return { userId: user._id, clientCount };
+        })
       );
-      const randomUser = organizationUsers[randomUserIndex];
-      const assignedTo = randomUser._id;
+
+      // Find the user with the least number of clients
+      const leastAssignedUser = userClientCounts.reduce((prev, current) =>
+        prev.clientCount < current.clientCount ? prev : current
+      );
+
+      const assignedTo = leastAssignedUser.userId;
 
       newClient = new Clients({
         clientName: clientName,
