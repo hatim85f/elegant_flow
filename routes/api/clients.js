@@ -4,6 +4,118 @@ const auth = require("../../middleware/auth");
 
 const Clients = require("../../models/Clients");
 const Organization = require("../../models/Organization");
+const User = require("../../models/User");
+const { default: mongoose } = require("mongoose");
+
+// @route   GET api/clients
+// @desc    Get all clients under the same organization as the user
+// @access  Private
+router.get("/all/:userId", auth, async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findOne({ _id: userId });
+    const userRole = user.role;
+
+    let matchCriteria = {};
+
+    // Define match criteria based on the user's role
+    if (userRole === "owner") {
+      matchCriteria.clientForOrganization = user.organization;
+    } else if (userRole === "manager") {
+      const userTeamIds = await User.find({ parentId: userId }).select("_id");
+      const teamMemberIds = userTeamIds.map((memberIds) => memberIds._id);
+      matchCriteria.assignedTo = { $in: teamMemberIds };
+    } else {
+      matchCriteria.assignedTo = new mongoose.Types.ObjectId(userId);
+    }
+
+    // Aggregate clients based on the match criteria
+    const clients = await Clients.aggregate([
+      {
+        $match: matchCriteria,
+      },
+      {
+        $lookup: {
+          from: "users", // The collection name where users are stored
+          localField: "assignedTo",
+          foreignField: "_id",
+          as: "assignedToUser",
+        },
+      },
+      {
+        $unwind: {
+          path: "$assignedToUser",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          handledBy: {
+            $concat: [
+              "$assignedToUser.firstName",
+              " ",
+              "$assignedToUser.lastName",
+            ],
+          },
+          handledByAvatar: "$assignedToUser.profile.avatar",
+        },
+      },
+      {
+        $facet: {
+          activeClients: [
+            { $match: { clientStatus: "active" } },
+            {
+              $project: {
+                clientName: 1,
+                clientEmail: 1,
+                clientPhone: 1,
+                clientStatus: 1,
+                assignedTo: 1,
+                clientForOrganization: 1,
+                clientCreatedBy: 1,
+                clientUpdatedBy: 1,
+                clientCreatedAt: 1,
+                clientUpdatedAt: 1,
+                handledBy: 1,
+                handledByAvatar: 1,
+              },
+            },
+          ],
+          inactiveClients: [
+            { $match: { clientStatus: "inactive" } },
+            {
+              $project: {
+                clientName: 1,
+                clientEmail: 1,
+                clientPhone: 1,
+                clientStatus: 1,
+                assignedTo: 1, // Add assignedTo (ID)
+                clientForOrganization: 1,
+                clientCreatedBy: 1,
+                clientUpdatedBy: 1,
+                clientCreatedAt: 1,
+                clientUpdatedAt: 1,
+                handledBy: 1,
+                handledByAvatar: 1,
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      activeClients: clients[0]?.activeClients || [],
+      inactiveClients: clients[0]?.inactiveClients || [],
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error: "ERROR!",
+      message: "Server Error, Please try again" + error.message,
+    });
+  }
+});
 
 // @route   POST api/clients
 // @desc    Create a client with the owner for fast distribution
