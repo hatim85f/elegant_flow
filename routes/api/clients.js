@@ -27,6 +27,8 @@ router.post("/add_short_client/:userId", auth, async (req, res) => {
     const isClient = await Clients.findOne({
       clientEmail: clientEmail,
       clientForOrganization: organization._id,
+      clientName: clientName,
+      clientPhone: clientPhone,
     });
 
     if (isClient) {
