@@ -58,7 +58,7 @@ const ClientsSchema = Schema({
   },
   preferredContactMethod: {
     type: String,
-    enum: ["email", "phone", "none"],
+    enum: ["email", "phone", "whatsapp", "sms"],
     default: "email",
   },
 
