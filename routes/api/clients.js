@@ -469,6 +469,7 @@ router.put("/full_client/:userId/:clientId", auth, async (req, res) => {
         projectDeadline: parsedDeadline,
         projectBudget,
         projectAssignedTo: clientAssignedTo,
+        clientStatus: "active",
         projectCreatedBy: userId,
       });
 
