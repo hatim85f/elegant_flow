@@ -2,34 +2,71 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const ClientsSchema = Schema({
+  // Basic client details
   clientName: {
     type: String,
     required: true,
   },
+  clientType: {
+    type: String,
+    enum: ["individual", "organization"],
+    default: "individual",
+  },
   clientEmail: {
     type: String,
+    validate: {
+      validator: function (v) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      },
+      message: (props) => `${props.value} is not a valid email!`,
+    },
   },
   clientPhone: {
     type: String,
+    required: true,
+  },
+  clientAddress: {
+    type: String,
+  },
+
+  // Relationships
+  clientForOrganization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "organization",
     required: true,
   },
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "user",
   },
-  clientProject: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "project",
+  clientProjects: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "project",
+    },
+  ],
+
+  // Additional details
+  clientIndustry: {
+    type: String,
   },
+  clientNotes: {
+    type: String,
+  },
+  clientFollowUp: {
+    type: Array,
+  },
+  preferredContactMethod: {
+    type: String,
+    enum: ["email", "phone", "none"],
+    default: "email",
+  },
+
+  // Status and timestamps
   clientStatus: {
     type: String,
     default: "inactive",
     enum: ["active", "inactive"],
-  },
-  clientForOrganization: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "organization",
-    required: true,
   },
   clientCreatedAt: {
     type: Date,
@@ -39,6 +76,8 @@ const ClientsSchema = Schema({
     type: Date,
     default: Date.now,
   },
+
+  // Audit fields
   clientCreatedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "user",

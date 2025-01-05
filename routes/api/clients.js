@@ -6,6 +6,7 @@ const Clients = require("../../models/Clients");
 const Organization = require("../../models/Organization");
 const User = require("../../models/User");
 const { default: mongoose } = require("mongoose");
+const Projects = require("../../models/Projects");
 
 // @route   GET api/clients
 // @desc    Get all clients under the same organization as the user
@@ -229,13 +230,260 @@ router.post("/add_short_client/:userId", auth, async (req, res) => {
   }
 });
 
-router.delete("/edit", async (req, res) => {
-  try {
-    const clients = await Clients.deleteMany({}, { clientStatus: "inactive" });
+router.post("/full_client/:userId", auth, async (req, res) => {
+  const {
+    clientName,
+    clientType,
+    clientEmail,
+    clientPhone,
+    clientAddress,
+    clientIndustry,
+    clientNotes,
+    assignedTo,
+    preferredContactMethod,
+    projectName,
+    projectDescription,
+    projectBudget,
+    projectDeadline,
+  } = req.body;
 
-    return res.status(200).send({
-      clients,
-      message: "All clients are inactive now",
+  const { userId } = req.params;
+
+  try {
+    // Fetch user and their organization
+    const user = await User.findOne({ _id: userId });
+
+    const organization = user.organization;
+
+    // Fetch organization users based on user's role
+    let staff;
+    if (user.role === "owner") {
+      staff = await User.find({ organization, role: "employee" });
+    } else if (user.role === "manager") {
+      staff = await User.find({ parentId: userId });
+    } else {
+      staff = user;
+    }
+
+    // Validate `assignedTo` user if provided
+    if (assignedTo && !staff.some((s) => s._id.toString() === assignedTo)) {
+      return res.status(400).json({
+        message: "Projects and Clinets must be assigned to one of sales team",
+      });
+    }
+
+    // Check for existing client
+    const isClient = await Clients.findOne({
+      clientEmail,
+      clientForOrganization: organization._id,
+    });
+    if (isClient) {
+      return res.status(400).json({ message: "Client already exists" });
+    }
+
+    // Determine staff with the least assigned clients if `assignedTo` is not provided
+    let clientAssignedTo = assignedTo || null;
+    if (!clientAssignedTo && staff.length > 0) {
+      const userClientCounts = await Promise.all(
+        staff.map(async (user) => {
+          const clientCount = await Clients.countDocuments({
+            assignedTo: user._id,
+          });
+          return { userId: user._id, clientCount };
+        })
+      );
+
+      const leastAssignedUser = userClientCounts.reduce((prev, current) =>
+        prev.clientCount < current.clientCount ? prev : current
+      );
+
+      clientAssignedTo = leastAssignedUser.userId;
+    }
+
+    // Create client
+    const newClient = new Clients({
+      clientName,
+      clientType,
+      clientEmail,
+      clientPhone,
+      clientAddress,
+      clientForOrganization: organization._id,
+      assignedTo: clientAssignedTo,
+      clientIndustry,
+      clientNotes,
+      preferredContactMethod,
+      clientStatus: "active",
+      clientCreatedBy: userId,
+    });
+
+    await newClient.save();
+
+    // Validate and handle project details
+    if (projectName) {
+      let parsedDeadline = null;
+      if (projectDeadline) {
+        parsedDeadline = new Date(projectDeadline);
+        if (isNaN(parsedDeadline.getTime())) {
+          return res
+            .status(400)
+            .json({ message: "Invalid project deadline date format" });
+        }
+      }
+
+      const newProject = new Projects({
+        projectName,
+        projectDescription,
+        projectClient: newClient._id,
+        projectForOrganization: organization._id,
+        projectDeadline: parsedDeadline,
+        projectBudget,
+        projectAssignedTo: clientAssignedTo,
+        projectCreatedBy: userId,
+      });
+
+      await newProject.save();
+
+      await Clients.updateOne(
+        { _id: newClient._id },
+        { $push: { clientProjects: newProject._id } }
+      );
+    }
+
+    return res.status(200).json({
+      message: "Client created successfully",
+      client: newClient,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error: "ERROR!",
+      message: error.message,
+    });
+  }
+});
+
+router.put("/full_client/:userId/:clientId", auth, async (req, res) => {
+  const {
+    clientName,
+    clientType,
+    clientEmail,
+    clientPhone,
+    clientAddress,
+    clientIndustry,
+    clientNotes,
+    assignedTo,
+    preferredContactMethod,
+    projectName,
+    projectDescription,
+    projectBudget,
+    projectDeadline,
+  } = req.body;
+
+  const { userId, clientId } = req.params;
+
+  try {
+    // Fetch user and their organization
+    const user = await User.findOne({ _id: userId });
+    const organization = user.organization;
+
+    // Fetch organization users based on user's role
+    let staff;
+    if (user.role === "owner") {
+      staff = await User.find({ organization, role: "employee" });
+    } else if (user.role === "manager") {
+      staff = await User.find({ parentId: userId });
+    } else {
+      staff = user; // Use user directly
+    }
+
+    // Validate `assignedTo` user if provided
+    if (assignedTo && !staff.some((s) => s._id.toString() === assignedTo)) {
+      return res.status(400).json({
+        message: "Clients must be assigned to one of the sales team",
+      });
+    }
+
+    // Fetch the existing client
+    const existingClient = await Clients.findOne({
+      _id: clientId,
+      clientForOrganization: organization._id,
+    });
+
+    if (!existingClient) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+
+    // Update client details
+    existingClient.clientName = clientName || existingClient.clientName;
+    existingClient.clientType = clientType || existingClient.clientType;
+    existingClient.clientEmail = clientEmail || existingClient.clientEmail;
+    existingClient.clientPhone = clientPhone || existingClient.clientPhone;
+    existingClient.clientAddress =
+      clientAddress || existingClient.clientAddress;
+    existingClient.clientIndustry =
+      clientIndustry || existingClient.clientIndustry;
+    existingClient.clientNotes = clientNotes || existingClient.clientNotes;
+    existingClient.preferredContactMethod =
+      preferredContactMethod || existingClient.preferredContactMethod;
+
+    // Assign to staff with least clients if no `assignedTo` is provided
+    let clientAssignedTo = assignedTo || existingClient.assignedTo;
+    if (!assignedTo && staff.length > 0) {
+      const userClientCounts = await Promise.all(
+        staff.map(async (user) => {
+          const clientCount = await Clients.countDocuments({
+            assignedTo: user._id,
+          });
+          return { userId: user._id, clientCount };
+        })
+      );
+
+      const leastAssignedUser = userClientCounts.reduce((prev, current) =>
+        prev.clientCount < current.clientCount ? prev : current
+      );
+
+      clientAssignedTo = leastAssignedUser.userId;
+    }
+
+    existingClient.assignedTo = clientAssignedTo;
+
+    // Save updated client details
+    await existingClient.save();
+
+    // Handle project creation
+    if (projectName) {
+      let parsedDeadline = null;
+      if (projectDeadline) {
+        parsedDeadline = new Date(projectDeadline);
+        if (isNaN(parsedDeadline.getTime())) {
+          return res
+            .status(400)
+            .json({ message: "Invalid project deadline date format" });
+        }
+      }
+
+      const newProject = new Projects({
+        projectName,
+        projectDescription,
+        projectClient: clientId,
+        projectForOrganization: organization._id,
+        projectDeadline: parsedDeadline,
+        projectBudget,
+        projectAssignedTo: clientAssignedTo,
+        projectCreatedBy: userId,
+      });
+
+      await newProject.save();
+
+      // Link the project to the client
+      await Clients.updateOne(
+        { _id: clientId },
+        { $push: { clientProjects: newProject._id } }
+      );
+    }
+
+    return res.status(200).json({
+      message: "Client updated successfully",
+      client: existingClient,
     });
   } catch (error) {
     return res.status(500).send({

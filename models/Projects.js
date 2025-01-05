@@ -30,6 +30,10 @@ const ProjectSchema = Schema({
   projectDeadline: {
     type: Date,
   },
+  projectQuotation: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "quotation",
+  },
   projectAssignedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "user",
