@@ -424,6 +424,7 @@ router.put("/full_client/:userId/:clientId", auth, async (req, res) => {
     existingClient.clientNotes = clientNotes || existingClient.clientNotes;
     existingClient.preferredContactMethod =
       preferredContactMethod || existingClient.preferredContactMethod;
+    existingClient.clientStatus = "active";
 
     // Assign to staff with least clients if no `assignedTo` is provided
     let clientAssignedTo = assignedTo || existingClient.assignedTo;
@@ -469,7 +470,6 @@ router.put("/full_client/:userId/:clientId", auth, async (req, res) => {
         projectDeadline: parsedDeadline,
         projectBudget,
         projectAssignedTo: clientAssignedTo,
-        clientStatus: "active",
         projectCreatedBy: userId,
       });
 
