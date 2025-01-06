@@ -53,7 +53,7 @@ const ClientsSchema = Schema({
   clientNotes: {
     type: String,
   },
-  clientFollowUp: {
+  clientFeedback: {
     type: Array,
   },
   preferredContactMethod: {

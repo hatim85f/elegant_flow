@@ -144,6 +144,27 @@ router.get("/all/:userId", auth, async (req, res) => {
   }
 });
 
+// get full client details
+// @ route GET api/clients/:userId/:clientId
+// @ desc get full client details
+// @ access private
+router.get("/:clientId", auth, async (req, res) => {
+  const { clientId } = req.params;
+
+  try {
+    const client = await Clients.findone({ _id: clientId });
+
+    return res.status(200).json({
+      client,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error: "ERROR!",
+      message: "Server Error, Please try again" + error.message,
+    });
+  }
+});
+
 // @route   POST api/clients
 // @desc    Create a client with the owner for fast distribution
 // @access  Private
@@ -490,6 +511,155 @@ router.put("/full_client/:userId/:clientId", auth, async (req, res) => {
     return res.status(500).send({
       error: "ERROR!",
       message: error.message,
+    });
+  }
+});
+
+// push feedback to the client details
+// @ route PUT api/clients/feedback/:userId/:clientId
+router.put("/:userId/:clientId", auth, async (req, res) => {
+  const { userId, clientId } = req.params;
+
+  const { feedback } = req.body;
+
+  try {
+    const client = await Clients.findOne({ _id: clientId });
+    const user = await User.findOne({ _id: userId });
+
+    const newFeedback = {
+      feedback,
+      feedbackBy: user.firstName + " " + user.lastName,
+      feedbackByAvatar: user.profile.avatar,
+      feedbackAt: new Date(),
+      feedbackSeen: false,
+      feedbackUserId: userId,
+    };
+
+    await client.updateOne(
+      { _id: clientId },
+      { $push: { clientFeedback: newFeedback } }
+    );
+
+    return res.status(200).json({
+      message: "Feedback added successfully",
+      client: client,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error: "ERROR!",
+      message:
+        "Something went wrong while trying to add your comment, please try again" +
+        error.message,
+    });
+  }
+});
+
+// @route   PUT api/clients/:userId/:clientId
+// @desc    Update a client feedback by index
+// @access  Private
+router.put("/feedback/:userId/:clientId", auth, async (req, res) => {
+  const { userId, clientId } = req.params;
+  const { feedbackIndex, feedback } = req.body;
+
+  try {
+    const client = await Clients.findOne({ _id: clientId });
+
+    const neededFeedback = client.clientFeedback[feedbackIndex];
+
+    if (neededFeedback.feedbackUserId !== userId) {
+      return res.status(403).json({
+        message: "You are not allowed to update this feedback",
+      });
+    }
+
+    // Update feedback by index
+    client.clientFeedback[feedbackIndex].feedback = feedback;
+    client.clientFeedback[feedbackIndex].feedbackUpdatedAt = new Date();
+    client.clientFeedback[feedbackIndex].edited = true;
+
+    await client.save();
+
+    return res.status(200).json({
+      message: "Feedback updated successfully",
+      client: client,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error: "ERROR!",
+      message:
+        "Something went wrong while trying to update your comment, please try again" +
+        error.message,
+    });
+  }
+});
+
+// @route   DELETE api/clients/:userId/:clientId
+// @desc    Delete a client feedback by index
+
+router.delete("/feedback/:userId/:clientId", auth, async (req, res) => {
+  const { userId, clientId } = req.params;
+  const { feedbackIndex } = req.body;
+
+  try {
+    const client = await Clients.findOne({ _id: clientId });
+
+    const neededFeedback = client.clientFeedback[feedbackIndex];
+
+    if (neededFeedback.feedbackUserId !== userId) {
+      return res.status(403).json({
+        message: "You are not allowed to delete this feedback",
+      });
+    }
+
+    // Delete feedback by index
+    client.clientFeedback.splice(feedbackIndex, 1);
+
+    await client.save();
+
+    return res.status(200).json({
+      message: "Feedback deleted successfully",
+      client: client,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error: "ERROR!",
+      message:
+        "Something went wrong while trying to delete your comment, please try again" +
+        error.message,
+    });
+  }
+});
+
+// @route  DELETE api/clients/:userId/:clientId
+// @desc   Delete a client
+// @access Private
+router.delete("/:userId/:clientId", auth, async (req, res) => {
+  const { userId, clientId } = req.params;
+
+  try {
+    const client = await Clients.findOne({ _id: clientId });
+
+    if (!client) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+
+    const user = await User.findOne({ _id: userId });
+
+    if (client.clientCreatedBy.toString() !== userId || user.role !== "owner") {
+      return res
+        .status(403)
+        .json({ message: "You are not allowed to delete this client" });
+    }
+
+    await client.remove();
+
+    return res.status(200).json({ message: "Client deleted successfully" });
+  } catch (error) {
+    return res.status(500).send({
+      error: "ERROR!",
+      message:
+        "Something went wrong while trying to delete the client, please try again" +
+        error.message,
     });
   }
 });
