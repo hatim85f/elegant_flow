@@ -173,6 +173,9 @@ router.get("/:clientId", auth, async (req, res) => {
               in: {
                 projectId: "$$project._id",
                 projectName: "$$project.projectName",
+                projectBudget: "$$project.projectBudget",
+                projectDeadline: "$$project.projectDeadline",
+                projectDescription: "$$project.projectDescription",
               },
             },
           },
