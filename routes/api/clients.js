@@ -152,15 +152,44 @@ router.get("/:clientId", auth, async (req, res) => {
   const { clientId } = req.params;
 
   try {
-    const client = await Clients.findone({ _id: clientId });
+    const client = await Clients.aggregate([
+      {
+        $match: { _id: new mongoose.Types.ObjectId(clientId) },
+      },
+      {
+        $lookup: {
+          from: "projects",
+          localField: "clientProjects", // Use the array of project IDs
+          foreignField: "_id", // Match with _id in the projects collection
+          as: "clientProjectsDetails", // Fetch project details
+        },
+      },
+      {
+        $addFields: {
+          clientProjects: {
+            $map: {
+              input: "$clientProjectsDetails", // Loop through fetched project details
+              as: "project",
+              in: {
+                projectId: "$$project._id",
+                projectName: "$$project.projectName",
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          clientProjectsDetails: 0, // Remove detailed project info to clean up response
+        },
+      },
+    ]);
 
-    return res.status(200).json({
-      client,
-    });
+    return res.status(200).json(client[0]); // Return the single client object
   } catch (error) {
     return res.status(500).send({
       error: "ERROR!",
-      message: "Server Error, Please try again" + error.message,
+      message: "Server Error, Please try again. " + error.message,
     });
   }
 });
