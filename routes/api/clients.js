@@ -179,8 +179,52 @@ router.get("/:clientId", auth, async (req, res) => {
         },
       },
       {
+        $lookup: {
+          from: "users",
+          localField: "assignedTo",
+          foreignField: "_id",
+          as: "handledByUser",
+        },
+      },
+      {
+        $unwind: {
+          path: "$handledByUser",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          handledBy: {
+            $concat: [
+              "$handledByUser.firstName",
+              " ",
+              "$handledByUser.lastName",
+            ],
+          },
+          handledByAvatar: "$handledByUser.profile.avatar",
+        },
+      },
+      {
         $project: {
-          clientProjectsDetails: 0, // Remove detailed project info to clean up response
+          _id: 1,
+          clientName: 1,
+          clientType: 1,
+          clientEmail: 1,
+          clientPhone: 1,
+          clientAddress: 1,
+          clientForOrganization: 1,
+          assignedTo: 1,
+          clientProjects: 1,
+          clientIndustry: 1,
+          clientNotes: 1,
+          clientFollowUp: 1,
+          preferredContactMethod: 1,
+          clientStatus: 1,
+          clientCreatedBy: 1,
+          clientCreatedAt: 1,
+          clientUpdatedAt: 1,
+          handledBy: 1,
+          handledByAvatar: 1, // Explicitly include this field
         },
       },
     ]);
