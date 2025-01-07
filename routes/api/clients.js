@@ -232,7 +232,7 @@ router.get("/:clientId", auth, async (req, res) => {
           latestProjectDetails: 1, // The latest project details
           clientIndustry: 1,
           clientNotes: 1,
-          clientFollowUp: 1,
+          clientFeedback: 1,
           preferredContactMethod: 1,
           clientStatus: 1,
           clientCreatedBy: 1,
@@ -624,7 +624,7 @@ router.put("/update_feedback/:userId/:clientId", auth, async (req, res) => {
 
     await Clients.updateOne(
       { _id: clientId },
-      { $push: { clientFollowUp: newFeedback } }
+      { $push: { clientFeedback: newFeedback } }
     );
 
     const client = await Clients.findOne({ _id: clientId });
@@ -653,7 +653,7 @@ router.put("/feedback/:userId/:clientId", auth, async (req, res) => {
   try {
     const client = await Clients.findOne({ _id: clientId });
 
-    const neededFeedback = client.clientFollowUp[feedbackIndex];
+    const neededFeedback = client.clientFeedback[feedbackIndex];
 
     if (neededFeedback.feedbackUserId !== userId) {
       return res.status(403).json({
@@ -662,9 +662,9 @@ router.put("/feedback/:userId/:clientId", auth, async (req, res) => {
     }
 
     // Update feedback by index
-    client.clientFollowUp[feedbackIndex].feedback = feedback;
-    client.clientFollowUp[feedbackIndex].feedbackUpdatedAt = new Date();
-    client.clientFollowUp[feedbackIndex].edited = true;
+    client.clientFeedback[feedbackIndex].feedback = feedback;
+    client.clientFeedback[feedbackIndex].feedbackUpdatedAt = new Date();
+    client.clientFeedback[feedbackIndex].edited = true;
 
     await client.save();
 
@@ -692,7 +692,7 @@ router.delete("/feedback/:userId/:clientId", auth, async (req, res) => {
   try {
     const client = await Clients.findOne({ _id: clientId });
 
-    const neededFeedback = client.clientFollowUp[feedbackIndex];
+    const neededFeedback = client.clientFeedback[feedbackIndex];
 
     if (neededFeedback.feedbackUserId !== userId) {
       return res.status(403).json({
@@ -701,7 +701,7 @@ router.delete("/feedback/:userId/:clientId", auth, async (req, res) => {
     }
 
     // Delete feedback by index
-    client.clientFollowUp.splice(feedbackIndex, 1);
+    client.clientFeedback.splice(feedbackIndex, 1);
 
     await client.save();
 
