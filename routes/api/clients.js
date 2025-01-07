@@ -166,18 +166,29 @@ router.get("/:clientId", auth, async (req, res) => {
       },
       {
         $addFields: {
-          clientProjects: {
-            $map: {
-              input: "$clientProjectsDetails", // Loop through fetched project details
-              as: "project",
-              in: {
-                projectId: "$$project._id",
-                projectName: "$$project.projectName",
-                projectBudget: "$$project.projectBudget",
-                projectDeadline: "$$project.projectDeadline",
-                projectDescription: "$$project.projectDescription",
+          latestProjectDetails: {
+            $arrayElemAt: [
+              {
+                $map: {
+                  input: {
+                    $sortArray: {
+                      input: "$clientProjectsDetails", // Sort the projects
+                      sortBy: { projectCreatedAt: -1 }, // Sort by createdAt descending
+                    },
+                  },
+                  as: "project",
+                  in: {
+                    projectId: "$$project._id",
+                    projectName: "$$project.projectName",
+                    projectBudget: "$$project.projectBudget",
+                    projectDeadline: "$$project.projectDeadline",
+                    projectDescription: "$$project.projectDescription",
+                    projectCreatedAt: "$$project.projectCreatedAt",
+                  },
+                },
               },
-            },
+              0, // Return the first element (latest project)
+            ],
           },
         },
       },
@@ -217,7 +228,8 @@ router.get("/:clientId", auth, async (req, res) => {
           clientAddress: 1,
           clientForOrganization: 1,
           assignedTo: 1,
-          clientProjects: 1,
+          clientProjects: 1, // Original project IDs
+          latestProjectDetails: 1, // The latest project details
           clientIndustry: 1,
           clientNotes: 1,
           clientFollowUp: 1,
@@ -227,7 +239,7 @@ router.get("/:clientId", auth, async (req, res) => {
           clientCreatedAt: 1,
           clientUpdatedAt: 1,
           handledBy: 1,
-          handledByAvatar: 1, // Explicitly include this field
+          handledByAvatar: 1,
         },
       },
     ]);
