@@ -605,7 +605,7 @@ router.put("/full_client/:userId/:clientId", auth, async (req, res) => {
 
 // push feedback to the client details
 // @ route PUT api/clients/feedback/:userId/:clientId
-router.put("/:userId/:clientId", auth, async (req, res) => {
+router.put("/update_feedback/:userId/:clientId", auth, async (req, res) => {
   const { userId, clientId } = req.params;
 
   const { feedback } = req.body;
