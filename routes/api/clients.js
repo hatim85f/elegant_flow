@@ -611,7 +611,6 @@ router.put("/update_feedback/:userId/:clientId", auth, async (req, res) => {
   const { feedback } = req.body;
 
   try {
-    const client = await Clients.findOne({ _id: clientId });
     const user = await User.findOne({ _id: userId });
 
     const newFeedback = {
@@ -623,10 +622,12 @@ router.put("/update_feedback/:userId/:clientId", auth, async (req, res) => {
       feedbackUserId: userId,
     };
 
-    await client.updateOne(
+    await Clients.updateOne(
       { _id: clientId },
-      { $push: { clientFeedback: newFeedback } }
+      { $push: { clientFollowUp: newFeedback } }
     );
+
+    const client = await Clients.findOne({ _id: clientId });
 
     return res.status(200).json({
       message: "Feedback added successfully",
@@ -652,7 +653,7 @@ router.put("/feedback/:userId/:clientId", auth, async (req, res) => {
   try {
     const client = await Clients.findOne({ _id: clientId });
 
-    const neededFeedback = client.clientFeedback[feedbackIndex];
+    const neededFeedback = client.clientFollowUp[feedbackIndex];
 
     if (neededFeedback.feedbackUserId !== userId) {
       return res.status(403).json({
@@ -661,9 +662,9 @@ router.put("/feedback/:userId/:clientId", auth, async (req, res) => {
     }
 
     // Update feedback by index
-    client.clientFeedback[feedbackIndex].feedback = feedback;
-    client.clientFeedback[feedbackIndex].feedbackUpdatedAt = new Date();
-    client.clientFeedback[feedbackIndex].edited = true;
+    client.clientFollowUp[feedbackIndex].feedback = feedback;
+    client.clientFollowUp[feedbackIndex].feedbackUpdatedAt = new Date();
+    client.clientFollowUp[feedbackIndex].edited = true;
 
     await client.save();
 
@@ -691,7 +692,7 @@ router.delete("/feedback/:userId/:clientId", auth, async (req, res) => {
   try {
     const client = await Clients.findOne({ _id: clientId });
 
-    const neededFeedback = client.clientFeedback[feedbackIndex];
+    const neededFeedback = client.clientFollowUp[feedbackIndex];
 
     if (neededFeedback.feedbackUserId !== userId) {
       return res.status(403).json({
@@ -700,7 +701,7 @@ router.delete("/feedback/:userId/:clientId", auth, async (req, res) => {
     }
 
     // Delete feedback by index
-    client.clientFeedback.splice(feedbackIndex, 1);
+    client.clientFollowUp.splice(feedbackIndex, 1);
 
     await client.save();
 
