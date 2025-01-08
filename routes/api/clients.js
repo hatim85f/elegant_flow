@@ -100,6 +100,7 @@ router.get("/all/:userId", auth, async (req, res) => {
                 clientUpdatedAt: 1,
                 handledBy: 1,
                 handledByAvatar: 1,
+                clientFeedback: 1,
               },
             },
           ],
