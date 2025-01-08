@@ -666,7 +666,7 @@ router.put(
           feedbackByAvatar: clientFeedback[item].feedbackByAvatar,
           feedbackAt: clientFeedback[item].feedbackAt,
           feedbackSeen:
-            clientFeedback[item].feedbackUserId === userId ? true : false,
+            clientFeedback[item].feedbackUserId !== userId ? true : false,
           feedbackUserId: clientFeedback[item].feedbackUserId,
         });
       }
