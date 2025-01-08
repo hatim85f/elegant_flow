@@ -655,17 +655,34 @@ router.put(
     try {
       const client = await Clients.findOne({ _id: clientId });
 
-      client.clientFeedback.forEach((feedback) => {
-        if (feedback.feedbackUserId !== userId) {
-          feedback.feedbackSeen = true;
-        }
-      });
+      const clientFeedback = client.clientFeedback;
 
-      await client.save();
+      let newFeedback = [];
+
+      for (let item in clientFeedback) {
+        newFeedback.push({
+          feedback: clientFeedback[item].feedback,
+          feedbackBy: clientFeedback[item].feedbackBy,
+          feedbackByAvatar: clientFeedback[item].feedbackByAvatar,
+          feedbackAt: clientFeedback[item].feedbackAt,
+          feedbackSeen:
+            clientFeedback[item].feedbackUserId === userId ? false : true,
+          feedbackUserId: clientFeedback[item].feedbackUserId,
+        });
+      }
+
+      await Clients.updateMany(
+        { _id: clientId },
+        {
+          $set: {
+            clientFeedback: newFeedback,
+          },
+        }
+      );
 
       return res.status(200).json({
         message: "Feedback seen updated successfully",
-        client: client,
+        client: newFeedback,
       });
     } catch (error) {
       return res.status(500).send({
