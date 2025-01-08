@@ -644,6 +644,40 @@ router.put("/update_feedback/:userId/:clientId", auth, async (req, res) => {
   }
 });
 
+//route to update seen property of feedback array
+// @ route PUT api/clients/feedback/:userId/:clientId
+router.put(
+  "/update_feedback_seen/:userId/:clientId",
+  auth,
+  async (req, res) => {
+    const { userId, clientId } = req.params;
+
+    try {
+      const client = await Clients.findOne({ _id: clientId });
+
+      client.clientFeedback.forEach((feedback) => {
+        if (feedback.feedbackUserId === userId) {
+          feedback.feedbackSeen = true;
+        }
+      });
+
+      await client.save();
+
+      return res.status(200).json({
+        message: "Feedback seen updated successfully",
+        client: client,
+      });
+    } catch (error) {
+      return res.status(500).send({
+        error: "ERROR!",
+        message:
+          "Something went wrong while trying to update your comment, please try again" +
+          error.message,
+      });
+    }
+  }
+);
+
 // @route   PUT api/clients/:userId/:clientId
 // @desc    Update a client feedback by index
 // @access  Private
