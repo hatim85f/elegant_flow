@@ -656,7 +656,7 @@ router.put(
       const client = await Clients.findOne({ _id: clientId });
 
       client.clientFeedback.forEach((feedback) => {
-        if (feedback.feedbackUserId === userId) {
+        if (feedback.feedbackUserId !== userId) {
           feedback.feedbackSeen = true;
         }
       });
