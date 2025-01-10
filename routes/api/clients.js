@@ -8,6 +8,13 @@ const User = require("../../models/User");
 const { default: mongoose } = require("mongoose");
 const Projects = require("../../models/Projects");
 
+const Notifications = require("../../models/Notifications");
+
+const sendNotification = require("../../helpers/sendNotifications");
+const isCompanyAdmin = require("../../middleware/isCompanyAdmin");
+
+const route = "menu";
+
 // @route   GET api/clients
 // @desc    Get all clients under the same organization as the user
 // @access  Private
@@ -257,88 +264,134 @@ router.get("/:clientId", auth, async (req, res) => {
 // @route   POST api/clients
 // @desc    Create a client with the owner for fast distribution
 // @access  Private
-router.post("/add_short_client/:userId", auth, async (req, res) => {
-  const { clientName, clientEmail, clientPhone } = req.body;
-  const { userId } = req.params;
+router.post(
+  "/add_short_client/:userId",
+  auth,
+  isCompanyAdmin,
+  async (req, res) => {
+    const { clientName, clientEmail, clientPhone } = req.body;
+    const { userId } = req.params;
 
-  try {
-    const organization = await Organization.findOne({
-      created_by: userId,
-    });
+    try {
+      const organization = await Organization.findOne({
+        created_by: userId,
+      });
 
-    const userData = await User.findOne({ _id: userId });
+      const userData = await User.findOne({ _id: userId });
 
-    const organizationUsers = await User.find({
-      organization: userData.organization,
-      role: "employee",
-    });
+      const organizationUsers = await User.find({
+        organization: userData.organization,
+        role: "employee",
+      });
 
-    const isClient = await Clients.findOne({
-      clientEmail: clientEmail,
-      clientForOrganization: organization._id,
-      clientName: clientName,
-      clientPhone: clientPhone,
-    });
+      const isClient = await Clients.findOne({
+        clientEmail: clientEmail,
+        clientForOrganization: organization._id,
+        clientName: clientName,
+        clientPhone: clientPhone,
+      });
 
-    if (isClient) {
-      return res.status(400).json({
-        message: "Client already exists",
+      if (isClient) {
+        return res.status(400).json({
+          message: "Client already exists",
+        });
+      }
+
+      let newClient;
+
+      if (organizationUsers.length > 0) {
+        // Find the employee with the least number of clients
+        const userClientCounts = await Promise.all(
+          organizationUsers.map(async (user) => {
+            const clientCount = await Clients.countDocuments({
+              assignedTo: user._id,
+            });
+            return { userId: user._id, clientCount };
+          })
+        );
+
+        // Find the user with the least number of clients
+        const leastAssignedUser = userClientCounts.reduce((prev, current) =>
+          prev.clientCount < current.clientCount ? prev : current
+        );
+
+        const assignedTo = leastAssignedUser;
+
+        newClient = new Clients({
+          clientName: clientName,
+          clientEmail: clientEmail,
+          clientPhone: clientPhone,
+          assignedTo: assignedTo,
+          clientForOrganization: organization._id,
+          clientCreatedBy: userId,
+          clientUpdatedBy: userId,
+        });
+      } else {
+        newClient = new Clients({
+          clientName: clientName,
+          clientEmail: clientEmail,
+          clientPhone: clientPhone,
+          clientForOrganization: organization._id,
+          clientCreatedBy: userId,
+          clientUpdatedBy: userId,
+        });
+      }
+
+      const assigningUser = await User.findOne({ _id: userId });
+      const assignedName =
+        assigningUser.firstName + " " + assigningUser.lastName;
+
+      const assignedUser = await User.findOne({ _id: newClient.assignedTo });
+      const assignedTokens = assignedUser.pushTokens;
+
+      if (assignedTokens.length > 0) {
+        const title = `New Client Assigned by ${assignedName}`;
+        const body = `You have been assigned a new client: ${clientName}`;
+        const data = { route: route, id: newClient._id };
+        const sound = "custom-sound.wav";
+        const subject = "New Client Assigned";
+        const screen = "clients";
+
+        for (const token of assignedTokens) {
+          await sendNotification(
+            token,
+            title,
+            body,
+            data,
+            route,
+            screen,
+            sound
+          );
+        }
+
+        const newNotification = new Notifications({
+          title,
+          subject,
+          body: body,
+          type: "client",
+          from: userId,
+          to: newClient.assignedTo,
+          route: route,
+          screen: screen,
+        });
+
+        await Notifications.insertMany(newNotification);
+      }
+
+      await Clients.insertMany([newClient]);
+
+      res.json({
+        message: "Client created successfully",
+        client: newClient,
+      });
+    } catch (err) {
+      res.status(500).send({
+        error: "ERROR!",
+        message: err.message,
       });
     }
-
-    let newClient;
-
-    if (organizationUsers.length > 0) {
-      // Find the employee with the least number of clients
-      const userClientCounts = await Promise.all(
-        organizationUsers.map(async (user) => {
-          const clientCount = await Clients.countDocuments({
-            assignedTo: user._id,
-          });
-          return { userId: user._id, clientCount };
-        })
-      );
-
-      // Find the user with the least number of clients
-      const leastAssignedUser = userClientCounts.reduce((prev, current) =>
-        prev.clientCount < current.clientCount ? prev : current
-      );
-
-      const assignedTo = leastAssignedUser.userId;
-
-      newClient = new Clients({
-        clientName: clientName,
-        clientEmail: clientEmail,
-        clientPhone: clientPhone,
-        assignedTo: assignedTo,
-        clientForOrganization: organization._id,
-        clientCreatedBy: userId,
-        clientUpdatedBy: userId,
-      });
-    } else {
-      newClient = new Clients({
-        clientName: clientName,
-        clientEmail: clientEmail,
-        clientPhone: clientPhone,
-        clientForOrganization: organization._id,
-        clientCreatedBy: userId,
-        clientUpdatedBy: userId,
-      });
-    }
-
-    await Clients.insertMany([newClient]);
-
-    res.json({
-      message: "Client created successfully",
-      client: newClient,
-    });
-  } catch (err) {
-    res.status(500).send({
-      error: "ERROR!",
-      message: err.message,
-    });
   }
-});
+);
 
 router.post("/full_client/:userId", auth, async (req, res) => {
   const {
@@ -457,6 +510,46 @@ router.post("/full_client/:userId", auth, async (req, res) => {
         { _id: newClient._id },
         { $push: { clientProjects: newProject._id } }
       );
+    }
+
+    // Send notification to assigned user if he is not the one creating the client, and if client is updated by the assigned user, and for both if the client is created by client himself
+    const assigning = await User.findOne({ _id: userId });
+    const assigningTokens = assigning.pushTokens;
+
+    const assigned = await User.findOne({ _id: newClient.assignedTo });
+    const assignedTokens = assigned.pushTokens;
+
+    const fullTokens = [...assignedTokens, ...assigningTokens];
+
+    let assinedPerson = await User.findOne({ _id: newClient.assignedTo });
+    let manager = await User.findOne({ _id: assinedPerson.parentId });
+
+    if (fullTokens.length > 0) {
+      const title = projectName
+        ? `Client ${clientName} has been created with a project ${projectName}`
+        : `Client ${clientName} has been created`;
+      const body = `New client ${clientName} has been created`;
+      const data = { route: route, id: newClient._id, screen: "clients" };
+      const sound = "custom-sound.wav";
+      const subject = "New Client Created";
+      const screen = "clients";
+
+      for (const token of fullTokens) {
+        await sendNotification(token, title, body, data, route, screen, sound);
+      }
+
+      const newNotification = new Notifications({
+        title,
+        subject,
+        body: body,
+        type: "client",
+        from: userId === newClient.assignedTo ? userId : manager._id,
+        to: userId === newClient.assignedTo ? manager._id : userId,
+        route: route,
+        screen: screen,
+      });
+
+      await Notifications.insertMany(newNotification);
     }
 
     return res.status(200).json({
@@ -585,6 +678,53 @@ router.put("/full_client/:userId/:clientId", auth, async (req, res) => {
 
       await newProject.save();
 
+      // Send notification to assigned user if he is not the one creating the client, and if client is updated by the assigned user, and for both if the client is created by client himself
+      const assigning = await User.findOne({ _id: userId });
+      const assigningTokens = assigning.pushTokens;
+
+      const assigned = await User.findOne({ _id: newClient.assignedTo });
+      const assignedTokens = assigned.pushTokens;
+
+      const fullTokens = [...assignedTokens, ...assigningTokens];
+
+      let assinedPerson = await User.findOne({ _id: newClient.assignedTo });
+      let manager = await User.findOne({ _id: assinedPerson.parentId });
+
+      if (fullTokens.length > 0) {
+        const title = projectName
+          ? `Client ${clientName} has been created with a project ${projectName}`
+          : `Client ${clientName} has been created`;
+        const body = `New client ${clientName} has been created`;
+        const data = { route: route, id: newClient._id, screen: "clients" };
+        const sound = "custom-sound.wav";
+        const subject = "New Client Created";
+        const screen = "clients";
+
+        for (const token of fullTokens) {
+          await sendNotification(
+            token,
+            title,
+            body,
+            data,
+            route,
+            screen,
+            sound
+          );
+        }
+
+        const newNotification = new Notifications({
+          title,
+          subject,
+          body: body,
+          type: "client",
+          from: userId === newClient.assignedTo ? userId : manager._id,
+          to: userId === newClient.assignedTo ? manager._id : userId,
+          route: route,
+          screen: screen,
+        });
+
+        await Notifications.insertMany(newNotification);
+      }
       // Link the project to the client
       await Clients.updateOne(
         { _id: clientId },
@@ -614,6 +754,8 @@ router.put("/update_feedback/:userId/:clientId", auth, async (req, res) => {
   try {
     const user = await User.findOne({ _id: userId });
 
+    const client = await Clients.findOne({ _id: clientId });
+
     const newFeedback = {
       feedback,
       feedbackBy: user.firstName + " " + user.lastName,
@@ -628,7 +770,44 @@ router.put("/update_feedback/:userId/:clientId", auth, async (req, res) => {
       { $push: { clientFeedback: newFeedback } }
     );
 
-    const client = await Clients.findOne({ _id: clientId });
+    // send a notification for assigned person if he is not the one giving feedback, and to managers if the feedback is from the assigned person
+
+    const assigned = await User.findOne({ _id: client.assignedTo });
+    const assignedTokens = assigned.pushTokens;
+
+    const manager = await User.findOne({ _id: user.parentId });
+    const managerTokens = manager.pushTokens;
+
+    const allTokens = new Set([...assignedTokens, ...managerTokens]);
+
+    const feedbackFrom = await User.findOne({ _id: userId });
+    const feedbackerName = feedbackFrom.firstName + " " + feedbackFrom.lastName;
+
+    if (allTokens.length > 0) {
+      const title = `New Feedback from ${feedbackerName}`;
+      const body = `New feedback from ${feedbackerName}`;
+      const data = { route: route, id: clientId };
+      const sound = "custom-sound.wav";
+      const subject = "New Feedback";
+      const screen = "clients";
+
+      for (const token of allTokens) {
+        await sendNotification(token, title, body, data, route, screen, sound);
+      }
+
+      const newNotification = new Notifications({
+        title,
+        subject,
+        body: body,
+        type: "client",
+        from: userId === client.assignedTo ? client.assignedTo : userId,
+        to: userId === client.assignedTo ? userId : client.assignedTo,
+        route: route,
+        screen: screen,
+      });
+
+      await Notifications.insertMany(newNotification);
+    }
 
     return res.status(200).json({
       message: "Feedback added successfully",
@@ -695,45 +874,6 @@ router.put(
   }
 );
 
-// @route   PUT api/clients/:userId/:clientId
-// @desc    Update a client feedback by index
-// @access  Private
-router.put("/feedback/:userId/:clientId", auth, async (req, res) => {
-  const { userId, clientId } = req.params;
-  const { feedbackIndex, feedback } = req.body;
-
-  try {
-    const client = await Clients.findOne({ _id: clientId });
-
-    const neededFeedback = client.clientFeedback[feedbackIndex];
-
-    if (neededFeedback.feedbackUserId !== userId) {
-      return res.status(403).json({
-        message: "You are not allowed to update this feedback",
-      });
-    }
-
-    // Update feedback by index
-    client.clientFeedback[feedbackIndex].feedback = feedback;
-    client.clientFeedback[feedbackIndex].feedbackUpdatedAt = new Date();
-    client.clientFeedback[feedbackIndex].edited = true;
-
-    await client.save();
-
-    return res.status(200).json({
-      message: "Feedback updated successfully",
-      client: client,
-    });
-  } catch (error) {
-    return res.status(500).send({
-      error: "ERROR!",
-      message:
-        "Something went wrong while trying to update your comment, please try again" +
-        error.message,
-    });
-  }
-});
-
 // @route   DELETE api/clients/:userId/:clientId
 // @desc    Delete a client feedback by index
 
@@ -793,6 +933,52 @@ router.delete("/:userId/:clientId", auth, async (req, res) => {
     }
 
     await client.remove();
+
+    // send a notification for assigned and organization owner and manager
+    const assigned = await User.findOne({ _id: client.assignedTo });
+    const assignedTokens = assigned.pushTokens;
+
+    const manager = await User.findOne({ _id: user.parentId });
+    const managerTokens = manager.pushTokens;
+
+    const owner = await User.find({ _id: user.organization, role: "owner" });
+    const ownerTokens = owner.map((owner) => owner.pushTokens);
+
+    const allTokens = new Set([
+      ...assignedTokens,
+      ...managerTokens,
+      ...ownerTokens,
+    ]);
+
+    const allIds = new Set([assigned._id, manager._id, owner._id]);
+
+    if (allTokens.length > 0) {
+      const title = `Client ${client.clientName} has been deleted`;
+      const body = `Client ${client.clientName} has been deleted`;
+      const data = { route: route, id: clientId };
+      const sound = "custom-sound.wav";
+      const subject = "Client Deleted";
+      const screen = "clients";
+
+      for (const token of allTokens) {
+        await sendNotification(token, title, body, data, route, screen, sound);
+      }
+
+      allIds.forEach(async (id) => {
+        const newNotification = new Notifications({
+          title,
+          subject,
+          body: body,
+          type: "client",
+          from: userId,
+          to: id,
+          route: route,
+          screen: screen,
+        });
+
+        await Notifications.insertMany(newNotification);
+      });
+    }
 
     return res.status(200).json({ message: "Client deleted successfully" });
   } catch (error) {

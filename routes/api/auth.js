@@ -391,4 +391,31 @@ router.put("/change-password/:userId", auth, async (req, res) => {
   }
 });
 
+// router @PUT
+// updating user push token
+router.put("/push-token/:userId", auth, async (req, res) => {
+  const { userId } = req.params;
+  const { pushToken } = req.body;
+
+  try {
+    await User.updateOne(
+      { _id: userId },
+      {
+        $addToSet: {
+          pushTokens: pushToken,
+        },
+      }
+    );
+
+    return res.status(200).send({
+      message: "Push Token updated successfully",
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error: "ERROR!",
+      message: "Server Error, please try again",
+    });
+  }
+});
+
 module.exports = router;

@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { route } = require("../routes/api/clients");
 const Schema = mongoose.Schema;
 
 const NotificationsSchema = Schema({
@@ -11,7 +10,7 @@ const NotificationsSchema = Schema({
     type: String,
     required: true,
   },
-  message: {
+  body: {
     type: String,
     required: true,
   },
@@ -36,6 +35,10 @@ const NotificationsSchema = Schema({
     required: true,
   },
   route: {
+    type: String,
+    required: true,
+  },
+  screen: {
     type: String,
     required: true,
   },

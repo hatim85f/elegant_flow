@@ -146,6 +146,11 @@ const UserSchema = Schema({
       type: String,
     },
   },
+  pushTokens: [
+    {
+      type: String,
+    },
+  ],
 });
 
 module.exports = User = mongoose.model("user", UserSchema);
