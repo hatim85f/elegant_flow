@@ -86,10 +86,7 @@ const ClientsSchema = Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "user",
   },
-  pushTokens: {
-    type: Array,
-    default: [],
-  },
+
   clientProfileImage: {
     type: String,
   },

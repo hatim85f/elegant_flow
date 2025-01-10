@@ -315,7 +315,7 @@ router.post(
           prev.clientCount < current.clientCount ? prev : current
         );
 
-        const assignedTo = leastAssignedUser;
+        const assignedTo = leastAssignedUser.userId;
 
         newClient = new Clients({
           clientName: clientName,
@@ -342,6 +342,7 @@ router.post(
         assigningUser.firstName + " " + assigningUser.lastName;
 
       const assignedUser = await User.findOne({ _id: newClient.assignedTo });
+
       const assignedTokens = assignedUser.pushTokens;
 
       if (assignedTokens.length > 0) {
