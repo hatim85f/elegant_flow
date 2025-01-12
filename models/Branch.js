@@ -20,6 +20,10 @@ const BranchSchema = Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "user",
   },
+  branchForOrganization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "organization",
+  },
 });
 
 module.exports = Branc = mongoose.model("branch", BranchSchema);

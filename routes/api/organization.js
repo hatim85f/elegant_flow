@@ -41,22 +41,32 @@ router.put("/:userId/:organizationId", auth, async (req, res) => {
   const { orgnaizationName, industry, website, logo, branches } = req.body;
 
   try {
-    let organizationBranches = [];
+    const existingBranchNames = new Set(
+      currentBranches.map((branch) => branch.branchName.toLowerCase()) // Case-insensitive comparison
+    );
+
     if (branches.length > 0) {
       for (let branch of branches) {
-        const newBranch = new Branch({
-          branchName: branch.branchName,
-          branchLocation: branch.branchLocation,
-          branchContact: branch.branchContact,
-          branchEmail: branch.branchEmail,
-          branchManager: branch.branchManager,
-        });
+        // Check if the branch already exists
+        if (!existingBranchNames.has(branch.branchName.toLowerCase())) {
+          const newBranch = new Branch({
+            branchName: branch.branchName,
+            branchLocation: branch.branchLocation,
+            branchContact: branch.branchContact,
+            branchEmail: branch.branchEmail,
+            branchManager: branch.branchManager,
+            branchForOrganization: organizationId,
+          });
 
-        organizationBranches.push(newBranch);
+          organizationBranches.push(newBranch);
+        }
       }
     }
 
-    await Branch.insertMany(organizationBranches);
+    // Insert only unique branches
+    if (organizationBranches.length > 0) {
+      await Branch.insertMany(organizationBranches);
+    }
 
     await Organization.updateOne(
       {
