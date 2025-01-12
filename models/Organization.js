@@ -32,6 +32,9 @@ const OrganizationSchema = Schema({
       ref: "branch",
     },
   ],
+  website: {
+    type: String,
+  },
 });
 
 module.exports = Organization = mongoose.model(
