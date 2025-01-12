@@ -35,6 +35,10 @@ const ClientsSchema = Schema({
     ref: "organization",
     required: true,
   },
+  clientForBranch: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "branch",
+  },
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "user",

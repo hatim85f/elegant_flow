@@ -65,9 +65,9 @@ const UserSchema = Schema({
     enum: ["full-time", "part-time", "contractor", "intern"],
     default: "full-time",
   },
-  officeLocation: {
-    type: String,
-    required: false,
+  branch: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "branch",
   },
   subordinates: [
     {

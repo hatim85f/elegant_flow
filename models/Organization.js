@@ -26,6 +26,12 @@ const OrganizationSchema = Schema({
     type: Date,
     default: Date.now,
   },
+  branches: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "branch",
+    },
+  ],
 });
 
 module.exports = Organization = mongoose.model(

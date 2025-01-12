@@ -108,6 +108,7 @@ router.get("/all/:userId", auth, async (req, res) => {
                 handledBy: 1,
                 handledByAvatar: 1,
                 clientFeedback: 1,
+                branch: 1,
               },
             },
           ],
@@ -133,6 +134,7 @@ router.get("/all/:userId", auth, async (req, res) => {
                 clientUpdatedAt: 1,
                 handledBy: 1,
                 handledByAvatar: 1,
+                bracnh: 1,
               },
             },
           ],
@@ -248,6 +250,7 @@ router.get("/:clientId", auth, async (req, res) => {
           clientUpdatedAt: 1,
           handledBy: 1,
           handledByAvatar: 1,
+          branch: 1,
         },
       },
     ]);
@@ -269,7 +272,7 @@ router.post(
   auth,
   isCompanyAdmin,
   async (req, res) => {
-    const { clientName, clientEmail, clientPhone } = req.body;
+    const { clientName, clientEmail, clientPhone, branch } = req.body;
     const { userId } = req.params;
 
     try {
@@ -282,6 +285,7 @@ router.post(
       const organizationUsers = await User.find({
         organization: userData.organization,
         role: "employee",
+        branch: branch,
       });
 
       const isClient = await Clients.findOne({
@@ -325,6 +329,7 @@ router.post(
           clientForOrganization: organization._id,
           clientCreatedBy: userId,
           clientUpdatedBy: userId,
+          branch: branch,
         });
       } else {
         newClient = new Clients({
@@ -334,6 +339,7 @@ router.post(
           clientForOrganization: organization._id,
           clientCreatedBy: userId,
           clientUpdatedBy: userId,
+          branch: branch,
         });
       }
 
@@ -409,6 +415,7 @@ router.post("/full_client/:userId", auth, async (req, res) => {
     projectDescription,
     projectBudget,
     projectDeadline,
+    branch,
   } = req.body;
 
   const { userId } = req.params;
@@ -478,6 +485,7 @@ router.post("/full_client/:userId", auth, async (req, res) => {
       preferredContactMethod,
       clientStatus: "active",
       clientCreatedBy: userId,
+      branch: branch,
     });
 
     await newClient.save();
@@ -580,6 +588,7 @@ router.put("/full_client/:userId/:clientId", auth, async (req, res) => {
     projectDescription,
     projectBudget,
     projectDeadline,
+    branch,
   } = req.body;
 
   const { userId, clientId } = req.params;
@@ -629,6 +638,7 @@ router.put("/full_client/:userId/:clientId", auth, async (req, res) => {
     existingClient.preferredContactMethod =
       preferredContactMethod || existingClient.preferredContactMethod;
     existingClient.clientStatus = "active";
+    existingClient.bracnh = branch;
 
     // Assign to staff with least clients if no `assignedTo` is provided
     let clientAssignedTo = assignedTo || existingClient.assignedTo;
