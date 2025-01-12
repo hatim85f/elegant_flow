@@ -41,6 +41,12 @@ router.put("/:userId/:organizationId", auth, async (req, res) => {
   const { orgnaizationName, industry, website, logo, branches } = req.body;
 
   try {
+    let organizationBranches = [];
+
+    // Fetch current branches for the organization
+    const currentBranches = await Branch.find({
+      branchForOrganization: organizationId,
+    });
     const existingBranchNames = new Set(
       currentBranches.map((branch) => branch.branchName.toLowerCase()) // Case-insensitive comparison
     );
