@@ -56,22 +56,26 @@ router.put("/:userId/:organizationId", auth, async (req, res) => {
       }
     }
 
+    await Branch.insertMany(organizationBranches);
+
     await Organization.updateOne(
       {
         _id: organizationId,
         created_by: userId,
       },
       {
-        name: orgnaizationName,
-        logo,
-        industry,
-        website,
-        branches: {
-          $addToSet: {
-            branches: organizationBranches,
+        $set: {
+          name: orgnaizationName,
+          logo,
+          industry,
+          website,
+          updated_at: Date.now(),
+        },
+        $addToSet: {
+          branches: {
+            $each: organizationBranches, // Use $each to add multiple branches
           },
         },
-        updated_at: Date.now(),
       }
     );
 
@@ -81,7 +85,7 @@ router.put("/:userId/:organizationId", auth, async (req, res) => {
   } catch (error) {
     return res.status(500).send({
       error: "Error!",
-      message: "Server Error for updating Organization",
+      message: "Server Error for updating Organization" + error.message,
     });
   }
 });
