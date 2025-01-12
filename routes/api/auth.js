@@ -147,7 +147,7 @@ router.post(
 
         organizationId = newOrganization._id;
 
-        organizationName = true;
+        organizationNew = true;
       } else {
         organizationId = organization._id;
       }
@@ -186,7 +186,7 @@ router.post(
         );
       }
 
-      const sanitizedUser = { ...newUser.toObject() };
+      let sanitizedUser = { ...newUser.toObject() };
       delete sanitizedUser.password;
 
       jwt.sign(payload, secretToken, (error, token) => {
@@ -201,7 +201,7 @@ router.post(
       console.log(error.message);
       return res.status(500).send({
         error: "Server Error",
-        message: "Server Error, please try again" + error.message,
+        message: "Server Error, please try again",
       });
     }
   }
