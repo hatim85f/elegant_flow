@@ -34,6 +34,7 @@ const OrganizationSchema = Schema({
   ],
   website: {
     type: String,
+    required: true,
   },
 });
 
