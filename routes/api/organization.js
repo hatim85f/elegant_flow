@@ -74,6 +74,10 @@ router.put("/:userId/:organizationId", auth, async (req, res) => {
         updated_at: Date.now(),
       }
     );
+
+    return res
+      .status(200)
+      .json({ message: "Organization updated successfully" });
   } catch (error) {
     return res.status(500).send({
       error: "Error!",
