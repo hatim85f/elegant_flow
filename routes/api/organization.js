@@ -4,6 +4,7 @@ const router = express.Router();
 const Organization = require("../../models/Organization");
 const auth = require("../../middleware/auth");
 const Branch = require("../../models/Branch");
+const { default: mongoose } = require("mongoose");
 
 // @GET api request
 // Public
@@ -23,9 +24,32 @@ router.get("/", async (req, res) => {
 
 router.get("/:userId", auth, async (req, res) => {
   const { userId } = req.params;
-
   try {
-    const organization = await Organization.findOne({ created_by: userId });
+    const organization = await Organization.aggregate([
+      {
+        $match: {
+          created_by: new mongoose.Types.ObjectId(userId), // Match organizations created by the specific user
+        },
+      },
+      {
+        $lookup: {
+          from: "branches", // Name of the branches collection
+          localField: "branches", // Field in the Organization collection
+          foreignField: "_id", // Field in the Branches collection
+          as: "branchDetails", // Alias for the joined data
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          logo: 1,
+          industry: 1,
+          website: 1,
+          branches: "$branchDetails", // Include the populated branch details
+          address: 1,
+        },
+      },
+    ]);
 
     return res.status(200).json({ organization });
   } catch (error) {
@@ -38,7 +62,8 @@ router.get("/:userId", auth, async (req, res) => {
 
 router.put("/:userId/:organizationId", auth, async (req, res) => {
   const { userId, organizationId } = req.params;
-  const { orgnaizationName, industry, website, logo, branches } = req.body;
+  const { orgnaizationName, industry, website, logo, branches, address } =
+    req.body;
 
   try {
     let organizationBranches = [];
@@ -86,6 +111,7 @@ router.put("/:userId/:organizationId", auth, async (req, res) => {
           industry,
           website,
           updated_at: Date.now(),
+          address,
         },
         $addToSet: {
           branches: {

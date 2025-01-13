@@ -35,6 +35,9 @@ const OrganizationSchema = Schema({
   website: {
     type: String,
   },
+  address: {
+    type: String,
+  },
 });
 
 module.exports = Organization = mongoose.model(
