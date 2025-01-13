@@ -51,7 +51,7 @@ router.get("/:userId", auth, async (req, res) => {
       },
     ]);
 
-    return res.status(200).json({ organization });
+    return res.status(200).json({ organization: organization[0] });
   } catch (error) {
     return res.status(500).send({
       error: "Error!",
