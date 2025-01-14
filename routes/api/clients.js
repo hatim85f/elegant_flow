@@ -329,7 +329,7 @@ router.post(
           clientForOrganization: organization._id,
           clientCreatedBy: userId,
           clientUpdatedBy: userId,
-          branch: branch,
+          clientForBranch: branch,
         });
       } else {
         newClient = new Clients({
@@ -339,7 +339,7 @@ router.post(
           clientForOrganization: organization._id,
           clientCreatedBy: userId,
           clientUpdatedBy: userId,
-          branch: branch,
+          clientForBranch: branch,
         });
       }
 
