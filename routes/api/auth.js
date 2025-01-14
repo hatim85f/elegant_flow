@@ -228,6 +228,10 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
       });
     }
 
+    // const indexes = await User.collection.dropIndex("lastName_1");
+
+    // console.log(indexes);
+
     const newUser = new User({
       firstName: firstName,
       lastName: lastName,

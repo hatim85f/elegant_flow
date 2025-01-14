@@ -100,19 +100,41 @@ router.put("/:userId/:organizationId", auth, async (req, res) => {
 
   try {
     let organizationBranches = [];
+    let branchUpdates = [];
 
     // Fetch current branches for the organization
     const currentBranches = await Branch.find({
       branchForOrganization: organizationId,
     });
-    const existingBranchNames = new Set(
-      currentBranches.map((branch) => branch.branchName.toLowerCase()) // Case-insensitive comparison
+
+    const existingBranchesMap = new Map(
+      currentBranches.map((branch) => [branch.branchName.toLowerCase(), branch])
     );
 
     if (branches.length > 0) {
       for (let branch of branches) {
-        // Check if the branch already exists
-        if (!existingBranchNames.has(branch.branchName.toLowerCase())) {
+        const branchNameLower = branch.branchName.toLowerCase();
+        if (existingBranchesMap.has(branchNameLower)) {
+          // Update existing branch
+          const existingBranch = existingBranchesMap.get(branchNameLower);
+          branchUpdates.push(
+            Branch.updateOne(
+              { _id: existingBranch._id },
+              {
+                $set: {
+                  branchLocation:
+                    branch.branchLocation || existingBranch.branchLocation,
+                  branchContact:
+                    branch.branchContact || existingBranch.branchContact,
+                  branchEmail: branch.branchEmail || existingBranch.branchEmail,
+                  branchManager:
+                    branch.branchManager || existingBranch.branchManager,
+                },
+              }
+            )
+          );
+        } else {
+          // Add new branch
           const newBranch = new Branch({
             branchName: branch.branchName,
             branchLocation: branch.branchLocation,
@@ -121,15 +143,20 @@ router.put("/:userId/:organizationId", auth, async (req, res) => {
             branchManager: branch.branchManager,
             branchForOrganization: organizationId,
           });
-
           organizationBranches.push(newBranch);
         }
       }
     }
 
-    // Insert only unique branches
+    // Execute branch updates
+    if (branchUpdates.length > 0) {
+      await Promise.all(branchUpdates);
+    }
+
+    // Insert new branches
     if (organizationBranches.length > 0) {
-      await Branch.insertMany(organizationBranches);
+      const insertedBranches = await Branch.insertMany(organizationBranches);
+      organizationBranches = insertedBranches.map((branch) => branch._id); // Collect the IDs of new branches
     }
 
     await Organization.updateOne(
@@ -148,7 +175,7 @@ router.put("/:userId/:organizationId", auth, async (req, res) => {
         },
         $addToSet: {
           branches: {
-            $each: organizationBranches, // Use $each to add multiple branches
+            $each: organizationBranches, // Add new branches
           },
         },
       }
@@ -160,7 +187,7 @@ router.put("/:userId/:organizationId", auth, async (req, res) => {
   } catch (error) {
     return res.status(500).send({
       error: "Error!",
-      message: "Server Error for updating Organization" + error.message,
+      message: "Server Error for updating Organization: " + error.message,
     });
   }
 });
