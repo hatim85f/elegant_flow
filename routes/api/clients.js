@@ -485,7 +485,7 @@ router.post("/full_client/:userId", auth, async (req, res) => {
       preferredContactMethod,
       clientStatus: "active",
       clientCreatedBy: userId,
-      branch: branch,
+      clientForBranch: branch,
     });
 
     await newClient.save();
