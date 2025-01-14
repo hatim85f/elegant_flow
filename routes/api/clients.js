@@ -349,7 +349,7 @@ router.post(
 
       const assignedUser = await User.findOne({ _id: newClient.assignedTo });
 
-      const assignedTokens = assignedUser.pushTokens;
+      const assignedTokens = assignedUser ? assignedUser.pushTokens : [];
 
       if (assignedTokens.length > 0) {
         const title = `New Client Assigned by ${assignedName}`;

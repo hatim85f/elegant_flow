@@ -244,9 +244,14 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
       branch: branchId ? branchId : null,
     });
 
+    const randomNumber = Math.floor(Math.random() * 1000);
+
     const salt = await bcrypt.genSalt(10);
 
-    newUser.password = await bcrypt.hash(`${firstName}${lastName}`, salt);
+    newUser.password = await bcrypt.hash(
+      `${firstName}${lastName}_${randomNumber}`,
+      salt
+    );
 
     await newUser.save();
 
@@ -260,7 +265,7 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
         subject: "Invitation to join the team",
         firstName: firstName,
         lastName: lastName,
-        manager_name: `${user.firstName} ${user.lastName}`,
+        manager_name: `${firstName}${lastName}_${randomNumber}`,
         username: email,
         password: `${firstName}${lastName}`,
       },
