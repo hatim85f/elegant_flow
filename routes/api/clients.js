@@ -523,10 +523,10 @@ router.post("/full_client/:userId", auth, async (req, res) => {
 
     // Send notification to assigned user if he is not the one creating the client, and if client is updated by the assigned user, and for both if the client is created by client himself
     const assigning = await User.findOne({ _id: userId });
-    const assigningTokens = assigning.pushTokens;
+    const assigningTokens = assigning ? assigning.pushTokens : [];
 
     const assigned = await User.findOne({ _id: newClient.assignedTo });
-    const assignedTokens = assigned.pushTokens;
+    const assignedTokens = assigned ? assigned.pushTokens : [];
 
     const fullTokens = [...assignedTokens, ...assigningTokens];
 
