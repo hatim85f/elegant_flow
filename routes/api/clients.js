@@ -531,7 +531,9 @@ router.post("/full_client/:userId", auth, async (req, res) => {
     const fullTokens = [...assignedTokens, ...assigningTokens];
 
     let assinedPerson = await User.findOne({ _id: newClient.assignedTo });
-    let manager = await User.findOne({ _id: assinedPerson.parentId });
+    let manager = assinedPerson
+      ? await User.findOne({ _id: assinedPerson.parentId })
+      : null;
 
     if (fullTokens.length > 0) {
       const title = projectName
