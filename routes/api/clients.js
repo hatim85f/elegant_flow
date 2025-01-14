@@ -99,7 +99,9 @@ router.get("/all/:userId", auth, async (req, res) => {
       },
       {
         $addFields: {
-          branchName: "$branchDetails.branchName",
+          branchName: {
+            $ifNull: ["$branchDetails.branchName", "No Branch Assigned"], // Handle missing branch details
+          },
         },
       },
       {
