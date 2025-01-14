@@ -84,6 +84,25 @@ router.get("/all/:userId", auth, async (req, res) => {
         },
       },
       {
+        $lookup: {
+          from: "branches",
+          localField: "clientForBranch", // Field in client referencing the branch
+          foreignField: "_id", // Match with _id in the branches collection
+          as: "branchDetails", // Fetch branch details
+        },
+      },
+      {
+        $unwind: {
+          path: "$branchDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          branchName: "$branchDetails.branchName",
+        },
+      },
+      {
         $facet: {
           activeClients: [
             { $match: { clientStatus: "active" } },
@@ -108,7 +127,7 @@ router.get("/all/:userId", auth, async (req, res) => {
                 handledBy: 1,
                 handledByAvatar: 1,
                 clientFeedback: 1,
-                branch: 1,
+                branchName: 1,
               },
             },
           ],
@@ -134,7 +153,7 @@ router.get("/all/:userId", auth, async (req, res) => {
                 clientUpdatedAt: 1,
                 handledBy: 1,
                 handledByAvatar: 1,
-                bracnh: 1,
+                branchName: 1,
               },
             },
           ],
@@ -229,6 +248,25 @@ router.get("/:clientId", auth, async (req, res) => {
         },
       },
       {
+        $lookup: {
+          from: "branches",
+          localField: "clientForBranch", // Field in client referencing the branch
+          foreignField: "_id", // Match with _id in the branches collection
+          as: "branchDetails", // Fetch branch details
+        },
+      },
+      {
+        $unwind: {
+          path: "$branchDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          branchName: "$branchDetails.branchName",
+        },
+      },
+      {
         $project: {
           _id: 1,
           clientName: 1,
@@ -250,7 +288,7 @@ router.get("/:clientId", auth, async (req, res) => {
           clientUpdatedAt: 1,
           handledBy: 1,
           handledByAvatar: 1,
-          branch: 1,
+          branchName: 1,
         },
       },
     ]);
@@ -446,7 +484,7 @@ router.post("/full_client/:userId", auth, async (req, res) => {
     // Check for existing client
     const isClient = await Clients.findOne({
       clientEmail,
-      clientForOrganization: organization._id,
+      clientForOrganization: organization,
     });
     if (isClient) {
       return res.status(400).json({ message: "Client already exists" });
@@ -471,6 +509,8 @@ router.post("/full_client/:userId", auth, async (req, res) => {
       clientAssignedTo = leastAssignedUser.userId;
     }
 
+    // return res.status(200).send({ clientAssignedTo });
+
     // Create client
     const newClient = new Clients({
       clientName,
@@ -478,7 +518,7 @@ router.post("/full_client/:userId", auth, async (req, res) => {
       clientEmail,
       clientPhone,
       clientAddress,
-      clientForOrganization: organization._id,
+      clientForOrganization: organization,
       assignedTo: clientAssignedTo,
       clientIndustry,
       clientNotes,
@@ -506,7 +546,7 @@ router.post("/full_client/:userId", auth, async (req, res) => {
         projectName,
         projectDescription,
         projectClient: newClient._id,
-        projectForOrganization: organization._id,
+        projectForOrganization: organization,
         projectDeadline: parsedDeadline,
         projectBudget,
         projectAssignedTo: clientAssignedTo,
@@ -620,7 +660,7 @@ router.put("/full_client/:userId/:clientId", auth, async (req, res) => {
     // Fetch the existing client
     const existingClient = await Clients.findOne({
       _id: clientId,
-      clientForOrganization: organization._id,
+      clientForOrganization: organization,
     });
 
     if (!existingClient) {
@@ -640,7 +680,7 @@ router.put("/full_client/:userId/:clientId", auth, async (req, res) => {
     existingClient.preferredContactMethod =
       preferredContactMethod || existingClient.preferredContactMethod;
     existingClient.clientStatus = "active";
-    existingClient.bracnh = branch;
+    existingClient.clientForBranch = branch;
 
     // Assign to staff with least clients if no `assignedTo` is provided
     let clientAssignedTo = assignedTo || existingClient.assignedTo;
@@ -682,7 +722,7 @@ router.put("/full_client/:userId/:clientId", auth, async (req, res) => {
         projectName,
         projectDescription,
         projectClient: clientId,
-        projectForOrganization: organization._id,
+        projectForOrganization: organization,
         projectDeadline: parsedDeadline,
         projectBudget,
         projectAssignedTo: clientAssignedTo,
@@ -693,15 +733,17 @@ router.put("/full_client/:userId/:clientId", auth, async (req, res) => {
 
       // Send notification to assigned user if he is not the one creating the client, and if client is updated by the assigned user, and for both if the client is created by client himself
       const assigning = await User.findOne({ _id: userId });
-      const assigningTokens = assigning.pushTokens;
+      const assigningTokens = assigning ? assigning.pushTokens : [];
 
       const assigned = await User.findOne({ _id: newClient.assignedTo });
-      const assignedTokens = assigned.pushTokens;
+      const assignedTokens = assigned ? assigned.pushTokens : [];
 
       const fullTokens = [...assignedTokens, ...assigningTokens];
 
       let assinedPerson = await User.findOne({ _id: newClient.assignedTo });
-      let manager = await User.findOne({ _id: assinedPerson.parentId });
+      let manager = assinedPerson
+        ? await User.findOne({ _id: assinedPerson.parentId })
+        : null;
 
       if (fullTokens.length > 0) {
         const title = projectName
