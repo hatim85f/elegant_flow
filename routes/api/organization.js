@@ -40,12 +40,45 @@ router.get("/:userId", auth, async (req, res) => {
         },
       },
       {
+        $unwind: "$branchDetails", // Unwind the branchDetails array to process each branch individually
+      },
+      {
+        $lookup: {
+          from: "users", // Name of the users collection
+          localField: "branchDetails.branchManager", // Field in the branches collection referencing a user
+          foreignField: "_id", // Field in the users collection
+          as: "branchManagerDetails", // Alias for the joined data
+        },
+      },
+      {
+        $addFields: {
+          "branchDetails.branchManager": {
+            $concat: [
+              { $arrayElemAt: ["$branchManagerDetails.firstName", 0] },
+              " ",
+              { $arrayElemAt: ["$branchManagerDetails.lastName", 0] },
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$_id", // Group back to the original organization structure
+          name: { $first: "$name" },
+          logo: { $first: "$logo" },
+          industry: { $first: "$industry" },
+          website: { $first: "$website" },
+          branches: { $push: "$branchDetails" }, // Regroup branches into an array
+          address: { $first: "$address" },
+        },
+      },
+      {
         $project: {
           name: 1,
           logo: 1,
           industry: 1,
           website: 1,
-          branches: "$branchDetails", // Include the populated branch details
+          branches: 1, // Include the enriched branch details
           address: 1,
         },
       },
