@@ -37,7 +37,15 @@ const LeadsSchema = Schema(
     source: {
       type: String,
       required: true,
-      enum: ["walkin", "call", "email", "website", "socialmedia", "other"],
+      enum: [
+        "walkin",
+        "call",
+        "email",
+        "website",
+        "socialmedia",
+        "referral",
+        "other",
+      ],
     },
     assignedTo: {
       type: Schema.Types.ObjectId,
@@ -52,7 +60,7 @@ const LeadsSchema = Schema(
     status: {
       type: String,
       required: true,
-      enum: ["pending", "active", "inactive", "closed"],
+      enum: ["pending", "active", "inactive", "closed", "in progress"],
       default: "pending",
     },
     notes: {
@@ -78,6 +86,9 @@ const LeadsSchema = Schema(
       reason: {
         type: String,
       },
+    },
+    scheduledFollowupDate: {
+      type: Date,
     },
     isArchived: {
       type: Boolean,

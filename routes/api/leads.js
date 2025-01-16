@@ -9,7 +9,7 @@ const Notifications = require("../../models/Notifications");
 const isCompanyAdmin = require("../../middleware/isCompanyAdmin");
 
 // GET route to get all leads
-router.get("/:userId", auth, async (req, res) => {
+router.get("/main/:userId", auth, async (req, res) => {
   const { userId } = req.params;
 
   try {
@@ -207,6 +207,7 @@ router.post("/create/:userId", auth, async (req, res) => {
       approval,
       status,
       notes,
+      scheduledFollowupDate,
     } = req.body;
 
     // Validate required fields
@@ -244,6 +245,7 @@ router.post("/create/:userId", auth, async (req, res) => {
       history: {
         created_by: userId,
       },
+      scheduledFollowupDate,
     });
 
     const savedLead = await newLead.save();
