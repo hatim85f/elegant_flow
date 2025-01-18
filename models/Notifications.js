@@ -27,12 +27,12 @@ const NotificationsSchema = Schema({
     default: Date.now,
   },
   from: {
-    type: String,
-    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "user",
   },
   to: {
-    type: String,
-    required: true,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "user",
   },
   route: {
     type: String,

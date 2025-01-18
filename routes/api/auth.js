@@ -430,4 +430,21 @@ router.put("/push-token/:userId", auth, async (req, res) => {
   }
 });
 
+router.put("/edit/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  const updatedUser = await User.updateMany(
+    { _id: userId },
+    {
+      $set: {
+        profile: {
+          avatar: req.body.avatar,
+        },
+      },
+    }
+  );
+
+  return res.status(200).send(updatedUser);
+});
+
 module.exports = router;
