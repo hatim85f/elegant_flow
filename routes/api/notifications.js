@@ -12,7 +12,8 @@ router.get("/:userId", async (req, res) => {
     const notifications = await Notifications.find({ to: userId }).sort({
       date: -1,
     });
-    res.json(notifications);
+
+    return res.status(200).send({ notifications });
   } catch (error) {
     console.error(error.message);
     res.status(500).send({
@@ -40,7 +41,8 @@ router.post("/", async (req, res) => {
     });
 
     const notification = await newNotification.save();
-    res.json({ notification });
+
+    return res.status(200).send({ notification });
   } catch (error) {
     console.error(error.message);
     res.status(500).send({
