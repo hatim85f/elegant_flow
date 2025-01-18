@@ -52,6 +52,20 @@ const getAllClients = async (req, res, userId) => {
       },
     },
     {
+      $lookup: {
+        from: "users",
+        localField: "clientCreatedBy",
+        foreignField: "_id",
+        as: "clientCreatedBy",
+      },
+    },
+    {
+      $unwind: {
+        path: "$clientCreatedBy",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
       $project: {
         clientCreatedAt: 1,
         clientName: 1,
@@ -62,6 +76,18 @@ const getAllClients = async (req, res, userId) => {
           ],
         },
         clientStatus: 1,
+        clientCreatedBy: {
+          $ifNull: [
+            {
+              $concat: [
+                "$clientCreatedBy.firstName",
+                " ",
+                "$clientCreatedBy.lastName",
+              ],
+            },
+            `${user.firstName} ${user.lastName}`,
+          ],
+        },
       },
     },
   ]);
