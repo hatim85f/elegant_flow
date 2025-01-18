@@ -2,11 +2,12 @@ const express = require("express");
 const router = express.Router();
 const Notifications = require("../../models/Notifications");
 const { default: mongoose } = require("mongoose");
+const auth = require("../../middleware/auth");
 
 // @route GET api/notifications
 // @desc Get all notifications
 // @access Private
-router.get("/:userId", async (req, res) => {
+router.get("/:userId", auth, async (req, res) => {
   try {
     const { userId } = req.params;
 
