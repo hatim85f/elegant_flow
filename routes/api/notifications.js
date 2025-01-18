@@ -59,7 +59,7 @@ router.get("/:userId", auth, async (req, res) => {
     console.error(error.message);
     res.status(500).send({
       error: "ERROR!",
-      message: "Server Error, Please try again later",
+      message: error.message,
     });
   }
 });
