@@ -67,7 +67,7 @@ router.get("/:userId", auth, async (req, res) => {
 // @route POST api/notifications
 // @desc Create a notification
 // @access Private
-router.post("/", async (req, res) => {
+router.post("/", auth, async (req, res) => {
   const { title, subject, message, type, from, to, route, body, screen } =
     req.body;
 

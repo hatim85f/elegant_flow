@@ -7,6 +7,8 @@ const { addShortClient } = require("../../helpers/addShortClient");
 const sendNotification = require("../../helpers/sendNotifications");
 const Notifications = require("../../models/Notifications");
 const isCompanyAdmin = require("../../middleware/isCompanyAdmin");
+const moment = require("moment");
+const { default: mongoose } = require("mongoose");
 
 // GET route to get all leads
 router.get("/main/:userId", auth, async (req, res) => {
@@ -250,80 +252,148 @@ router.post("/create/:userId", auth, async (req, res) => {
 
     const savedLead = await newLead.save();
 
-    if (user.role === "owner" || user.role === "manager") {
-      // Send notification to assigned user
-      const assignedUser = await User.findOne({ _id: assignedTo });
-      const assignedUserTokens = assignedUser.pushTokens || [];
+    const title = `A new lead has been created`;
+    const body = `New lead data has been added for ${name}`;
+    const message = `${user.firstName} ${user.lastName} has created a new lead for a new lead named ${name}, Lead type: ${type}, 
+    Email: ${email}, Phone: ${phone}, Address: ${address}, Source: ${source}`;
+    const data = { route: "leads" };
+    const sound = "custom-sound.wav";
+    const subject = "New Lead Created";
+    const screen = "leads";
 
-      assignedUserTokens.forEach((token) => {
-        sendNotification({
+    if (user.role === "owner") {
+      const assignedUser = await User.findOne({ _id: assignedTo });
+      const manager = await User.findOne({ _id: assignedUser.parentId });
+
+      const assignedUserTokens = assignedUser.pushTokens || [];
+      const managerTokens = manager.pushTokens || [];
+
+      const allTokens = [...assignedUserTokens, ...managerTokens];
+
+      for (const token of allTokens) {
+        await sendNotification(
           token,
-          title: "New lead assigned",
-          body: `You have been assigned a new lead: ${name}`,
-          data: { type: "lead", id: savedLead._id },
-        });
-      });
+          title,
+          body,
+          data,
+          "leads",
+          screen,
+          sound
+        );
+      }
 
       const newNotification = new Notifications({
-        title: "New lead assigned",
-        subject: "New lead assigned",
-        body: `You have been assigned a new lead: ${name}`,
+        title: subject,
+        subject,
+        message,
         type: "lead",
         from: userId,
         to: assignedTo,
         route: "leads",
-        screen: "leads",
+        body,
+        screen,
       });
 
       await newNotification.save();
-    } else {
-      // Send notification to manager
-      const manager = await User.findOne({ _id: user.parentId });
-      const managerTokens = manager.pushTokens || [];
-
-      // send to the owner
+    } else if (user.role === "manager") {
+      const assignedUser = await User.findOne({ _id: assignedTo });
       const owner = await User.findOne({
         organization: user.organization,
         role: "owner",
       });
+
+      const assignedUserTokens = assignedUser.pushTokens || [];
       const ownerTokens = owner.pushTokens || [];
 
-      const allTokens = [...managerTokens, ...ownerTokens];
+      const allTokens = [...assignedUserTokens, ...ownerTokens];
 
-      allTokens.forEach((token) => {
-        sendNotification({
+      for (const token of allTokens) {
+        await sendNotification(
           token,
-          title: "New lead created",
-          body: `A new lead has been created: ${name} by ${user.firstName} ${user.lastName}`,
-          data: { type: "lead", id: savedLead._id },
-        });
-      });
+          title,
+          body,
+          data,
+          "leads",
+          screen,
+          sound
+        );
+      }
 
       const newNotification = new Notifications({
-        title: "New lead created",
-        subject: "New lead created",
-        body: `A new lead has been created: ${name} by ${user.firstName} ${user.lastName}`,
+        title: subject,
+        subject,
+        message,
         type: "lead",
         from: userId,
-        to: user.parentId,
+        to: assignedTo,
         route: "leads",
-        screen: "leads",
+        body,
+        screen,
       });
 
       await newNotification.save();
 
-      const newNotificationOwner = new Notifications({
-        title: "New lead created",
-        subject: "New lead created",
-        body: `A new lead has been created: ${name} by ${user.firstName} ${user.lastName}`,
+      const ownerNotification = new Notifications({
+        title: subject,
+        subject,
+        message,
         type: "lead",
         from: userId,
         to: owner._id,
         route: "leads",
-        screen: "leads",
+        body,
+        screen,
       });
 
-      await newNotificationOwner.save();
+      await ownerNotification.save();
+    } else {
+      const owner = await User.findOne({ organization: user.organization });
+      const manager = await User.findOne({ _id: user.parentId });
+
+      const ownerTokens = owner.pushTokens || [];
+      const managerTokens = manager.pushTokens || [];
+
+      const allTokens = [...ownerTokens, ...managerTokens];
+
+      for (const token of allTokens) {
+        await sendNotification(
+          token,
+          title,
+          body,
+          data,
+          "leads",
+          screen,
+          sound
+        );
+      }
+
+      const newNotification = new Notifications({
+        title: subject,
+        subject,
+        message,
+        type: "lead",
+        from: userId,
+        to: assignedTo,
+        route: "leads",
+        body,
+        screen,
+      });
+
+      await newNotification.save();
+
+      const ownerNotification = new Notifications({
+        title: subject,
+        subject,
+        message,
+        type: "lead",
+        from: userId,
+        to: owner._id,
+        route: "leads",
+        body,
+        screen,
+      });
+
+      await ownerNotification.save();
     }
 
     res.status(201).json({
@@ -344,86 +414,199 @@ router.put("/edit-status/:leadId", auth, async (req, res) => {
   const { newStatus, reason, userId } = req.body;
 
   try {
-    const user = await User.findOne({ _id: userId });
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
-    }
-
-    if (!newStatus) {
-      return res.status(400).json({ message: "New status is required." });
-    }
-
     const lead = await Leads.findOne({ _id: leadId });
-    if (!lead) {
-      return res.status(404).json({ message: "Lead not found." });
+
+    const user = await User.findOne({ _id: userId });
+
+    let returnMessage = "";
+
+    const assignedToUser = await User.findOne({ _id: lead.assignedTo });
+    const assignedToManager = await User.findOne({
+      _id: assignedToUser.parentId,
+    });
+    const owner = await User.findOne({
+      organization: lead.relatedOrganization,
+      role: "owner",
+    });
+
+    const assignedUserTokens = assignedToUser.pushTokens || [];
+    const assignedManagerTokens = assignedToManager.pushTokens || [];
+    const ownerTokens = owner.pushTokens || [];
+
+    const allTokens = [
+      ...assignedUserTokens,
+      ...assignedManagerTokens,
+      ...ownerTokens,
+    ];
+
+    if (newStatus === "active") {
+      await Leads.updateOne(
+        { _id: leadId },
+        {
+          $set: {
+            status: newStatus,
+            "history.updatedAt": new Date(),
+            "history.updated_by": userId,
+          },
+        }
+      );
+
+      const title = `Lead status updated to active`;
+      const message = `Lead status has been updated to active for ${lead.name}`;
+      const data = { route: "leads" };
+      const sound = "custom-sound.wav";
+      const subject = "Lead Status Updated";
+      const screen = "leads";
+      const body = `Lead status has been updated to active for ${
+        lead.name
+      }, change has been done by ${user.firstName} ${
+        user.lastName
+      }, active status reason: ${reason}, date: ${moment().format(
+        "YYYY-MM-DD"
+      )}`;
+
+      for (let token of allTokens) {
+        await sendNotification(
+          token,
+          title,
+          body,
+          data,
+          "leads",
+          screen,
+          sound
+        );
+      }
+
+      const newNotification = new Notifications({
+        title: subject,
+        subject,
+        message,
+        type: "lead",
+        from: userId,
+        to: assignedToManager._id,
+        route: "leads",
+        body,
+        screen,
+      });
+
+      await newNotification.save();
+
+      returnMessage = "Lead status updated to active.";
     }
 
-    // Handle "inactive" status changes requiring approval
     if (newStatus === "inactive") {
-      if (user.role !== "manager" && user.role !== "owner") {
-        // Find the manager (parentId) of the assignedTo user
-        const assignedUser = await User.findOne({ _id: lead.assignedTo });
-        const managerId = assignedUser.parentId;
+      if (user.role === "employee") {
+        //send notificiation to owner and manager to request change
 
-        // Send notification to manager
-        const manager = await User.findOne({ _id: managerId });
-        const managerTokens = manager.pushTokens || [];
+        const title = `Lead status change request`;
+        const message = `Lead status change request for ${lead.name}`;
+        const data = { route: "leads" };
+        const sound = "custom-sound.wav";
+        const subject = "Lead Status Change Request";
+        const screen = "leads";
+        const body = `Lead status change request for ${lead.name}, change has been requested by ${user.firstName} ${user.lastName}`;
 
-        managerTokens.forEach((token) => {
-          sendNotification({
+        for (const token of assignedManagerTokens) {
+          await sendNotification(
             token,
-            title: "Lead status change request",
-            body: `${user.firstName} ${user.lastName} is requesting to change lead status to 'inactive'`,
-            data: { type: "lead", id: leadId },
-          });
-        });
+            title,
+            body,
+            data,
+            "leads",
+            screen,
+            sound
+          );
+        }
+
+        returnMessage = "Lead status change request sent to manager.";
 
         const newNotification = new Notifications({
-          title: "Lead status change request",
-          subject: "Lead status change request",
-          body: `${user.firstName} ${user.lastName} is requesting to change lead status to 'inactive'`,
+          title: subject,
+          subject,
+          message,
           type: "lead",
           from: userId,
-          to: managerId,
+          to: lead.assignedTo,
           route: "leads",
-          screen: "leads",
+          body,
+          screen,
         });
 
         await newNotification.save();
+      } else {
+        await Leads.updateOne(
+          { _id: leadId },
+          {
+            $set: {
+              status: newStatus,
+              "history.updatedAt": new Date(),
+              "history.updated_by": userId,
+            },
+          }
+        );
 
-        return res.status(200).json({
-          message: "Approval request sent to manager.",
+        returnMessage = "Lead status updated to inactive.";
+
+        const title = `Lead status updated to inactive`;
+        const message = `Lead status has been updated to inactive for ${lead.name}`;
+        const data = { route: "leads" };
+        const sound = "custom-sound.wav";
+        const subject = "Lead Status Updated";
+        const screen = "leads";
+        const body = `Lead status has been updated to inactive for ${
+          lead.name
+        }, change has been done by ${user.firstName} ${
+          user.lastName
+        }, inactive status reason: ${reason}, date: ${moment().format(
+          "YYYY-MM-DD"
+        )}`;
+
+        for (const token of allTokens) {
+          await sendNotification(
+            token,
+            title,
+            body,
+            data,
+            "leads",
+            screen,
+            sound
+          );
+        }
+
+        const newNotification = new Notifications({
+          title: subject,
+          subject,
+          message,
+          type: "lead",
+          from: userId,
+          to: lead.assignedTo,
+          route: "leads",
+          body,
+          screen,
         });
+        await newNotification.save();
+        const ownerNotification = new Notifications({
+          title: subject,
+          subject,
+          message,
+          type: "lead",
+          from: userId,
+          to: owner._id,
+          route: "leads",
+          body,
+          screen,
+        });
+
+        await ownerNotification.save();
       }
     }
 
-    // Update lead status and history for managers/owners or "active" status
-    lead.status = newStatus;
-    lead.history.updatedAt = new Date();
-    lead.history.updated_by = userId;
-    lead.history.reason = reason || "No reason provided";
-
-    if (newStatus === "active") {
-      await addShortClient({
-        clientName: lead.name,
-        clientEmail: lead.email,
-        clientPhone: lead.phone,
-        branch: lead.relatedBranch,
-        userId,
-      });
-    }
-
-    const updatedLead = await lead.save();
-
-    res.status(200).json({
-      message: "Lead status updated successfully.",
-      lead: updatedLead,
-    });
+    return res.status(200).json({ message: returnMessage });
   } catch (error) {
     console.error("Error updating lead status:", error);
     return res.status(500).json({
       error: "ERROR!",
-      message: "An error occurred while updating the lead status.",
+      message: error.message,
     });
   }
 });
