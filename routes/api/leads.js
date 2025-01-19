@@ -250,6 +250,82 @@ router.post("/create/:userId", auth, async (req, res) => {
 
     const savedLead = await newLead.save();
 
+    if (user.role === "owner" || user.role === "manager") {
+      // Send notification to assigned user
+      const assignedUser = await User.findOne({ _id: assignedTo });
+      const assignedUserTokens = assignedUser.pushTokens || [];
+
+      assignedUserTokens.forEach((token) => {
+        sendNotification({
+          token,
+          title: "New lead assigned",
+          body: `You have been assigned a new lead: ${name}`,
+          data: { type: "lead", id: savedLead._id },
+        });
+      });
+
+      const newNotification = new Notifications({
+        title: "New lead assigned",
+        subject: "New lead assigned",
+        body: `You have been assigned a new lead: ${name}`,
+        type: "lead",
+        from: userId,
+        to: assignedTo,
+        route: "leads",
+        screen: "leads",
+      });
+
+      await newNotification.save();
+    } else {
+      // Send notification to manager
+      const manager = await User.findOne({ _id: user.parentId });
+      const managerTokens = manager.pushTokens || [];
+
+      // send to the owner
+      const owner = await User.findOne({
+        organization: user.organization,
+        role: "owner",
+      });
+      const ownerTokens = owner.pushTokens || [];
+
+      const allTokens = [...managerTokens, ...ownerTokens];
+
+      allTokens.forEach((token) => {
+        sendNotification({
+          token,
+          title: "New lead created",
+          body: `A new lead has been created: ${name} by ${user.firstName} ${user.lastName}`,
+          data: { type: "lead", id: savedLead._id },
+        });
+      });
+
+      const newNotification = new Notifications({
+        title: "New lead created",
+        subject: "New lead created",
+        body: `A new lead has been created: ${name} by ${user.firstName} ${user.lastName}`,
+        type: "lead",
+        from: userId,
+        to: user.parentId,
+        route: "leads",
+        screen: "leads",
+      });
+
+      await newNotification.save();
+
+      const newNotificationOwner = new Notifications({
+        title: "New lead created",
+        subject: "New lead created",
+        body: `A new lead has been created: ${name} by ${user.firstName} ${user.lastName}`,
+        type: "lead",
+        from: userId,
+        to: owner._id,
+        route: "leads",
+        screen: "leads",
+      });
+
+      await newNotificationOwner.save();
+    }
+
     res.status(201).json({
       message: "Lead created successfully.",
       lead: savedLead,

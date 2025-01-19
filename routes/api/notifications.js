@@ -38,7 +38,7 @@ router.get("/:userId", auth, async (req, res) => {
           subject: 1,
           message: 1,
           type: 1,
-          form: { $concat: ["$from.firstName", " ", "$from.lastName"] },
+          from: { $concat: ["$from.firstName", " ", "$from.lastName"] },
           fromId: "$from._id",
           fromAvatar: "$from.profile.avatar",
           to: 1,
@@ -59,7 +59,7 @@ router.get("/:userId", auth, async (req, res) => {
     console.error(error.message);
     res.status(500).send({
       error: "ERROR!",
-      message: error.message,
+      message: "Server Error, Please try again later",
     });
   }
 });
@@ -99,7 +99,7 @@ router.post("/", async (req, res) => {
 // @route PUT api/notifications/:id
 // @desc Update a notification
 // @access Private
-router.put("/:notificationId", async (req, res) => {
+router.put("/:notificationId", auth, async (req, res) => {
   const { notificationId } = req.params;
 
   try {
