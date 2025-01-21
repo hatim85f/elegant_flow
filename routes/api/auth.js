@@ -163,6 +163,22 @@ router.post(
         branch: null,
       });
 
+      sgMail.setApiKey(mailAPIKey);
+
+      const msg = {
+        to: userName,
+        from: "info@codexpandit.com",
+        templateId: "d-f99106d94c9a47749d3e5bd05c5572d9",
+        dynamic_template_data: {
+          subject: "Thank you for registering",
+          firstName: firstName,
+          lastName: lastName,
+          username: userName,
+        },
+      };
+
+      sgMail.send(msg);
+
       const payload = {
         user: {
           id: newUser.id,
@@ -265,9 +281,9 @@ router.post("/invite", auth, isCompanyAdmin, async (req, res) => {
         subject: "Invitation to join the team",
         firstName: firstName,
         lastName: lastName,
-        manager_name: `${firstName}${lastName}_${randomNumber}`,
+        manager_name: `${firstName} ${lastName}`,
         username: email,
-        password: `${firstName}${lastName}`,
+        password: `${firstName}${lastName}_${randomNumber}`,
       },
     };
 
