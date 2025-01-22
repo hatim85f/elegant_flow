@@ -728,10 +728,13 @@ router.put("/update_feedback/:userId/:clientId", auth, async (req, res) => {
     // send a notification for assigned person if he is not the one giving feedback, and to managers if the feedback is from the assigned person
 
     const assigned = await User.findOne({ _id: client.assignedTo });
-    const assignedTokens = assigned.pushTokens;
+    const assignedTokens = assigned.pushTokens || [];
 
-    const manager = await User.findOne({ _id: user.parentId });
-    const managerTokens = manager.pushTokens;
+    const parentId =
+      client.assignedTo === userId ? user.parentId : assigned.parentId;
+
+    const manager = await User.findOne({ _id: assigned.parentId });
+    const managerTokens = manager.pushTokens || [];
 
     const allTokens = new Set([...assignedTokens, ...managerTokens]);
 
