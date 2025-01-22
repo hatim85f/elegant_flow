@@ -241,6 +241,8 @@ router.post("/create/:userId", auth, async (req, res) => {
       scheduledFollowupDate,
     });
 
+    await newLead.save();
+
     const title = `A new lead has been created`;
     const body = `New lead data has been added for ${name}`;
     const message = `${user.firstName} ${user.lastName} has created a new lead for a new lead named ${name}, Lead type: ${type}, 
