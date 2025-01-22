@@ -241,8 +241,6 @@ router.post("/create/:userId", auth, async (req, res) => {
       scheduledFollowupDate,
     });
 
-    const savedLead = await newLead.save();
-
     const title = `A new lead has been created`;
     const body = `New lead data has been added for ${name}`;
     const message = `${user.firstName} ${user.lastName} has created a new lead for a new lead named ${name}, Lead type: ${type}, 
@@ -256,8 +254,8 @@ router.post("/create/:userId", auth, async (req, res) => {
       const assignedUser = await User.findOne({ _id: assignedTo });
       const manager = await User.findOne({ _id: assignedUser.parentId });
 
-      const assignedUserTokens = assignedUser.pushTokens || [];
-      const managerTokens = manager.pushTokens || [];
+      const assignedUserTokens = assignedUser.pushTokens || []; // Default to empty array
+      const managerTokens = manager?.pushTokens || []; // Default to empty array and handle missing manager
 
       const allTokens = [...assignedUserTokens, ...managerTokens];
 
@@ -295,8 +293,8 @@ router.post("/create/:userId", auth, async (req, res) => {
         role: "owner",
       });
 
-      const assignedUserTokens = assignedUser.pushTokens || [];
-      const ownerTokens = owner.pushTokens || [];
+      const assignedUserTokens = assignedUser.pushTokens || []; // Default to empty array
+      const ownerTokens = owner?.pushTokens || []; // Default to empty array and handle missing owner
 
       const allTokens = [...assignedUserTokens, ...ownerTokens];
 
@@ -334,7 +332,7 @@ router.post("/create/:userId", auth, async (req, res) => {
         message,
         type: "lead",
         from: userId,
-        to: owner._id,
+        to: owner?._id || null, // Handle missing owner
         route: "leads",
         body,
         screen,
@@ -345,8 +343,8 @@ router.post("/create/:userId", auth, async (req, res) => {
       const owner = await User.findOne({ organization: user.organization });
       const manager = await User.findOne({ _id: user.parentId });
 
-      const ownerTokens = owner.pushTokens || [];
-      const managerTokens = manager.pushTokens || [];
+      const ownerTokens = owner?.pushTokens || []; // Default to empty array
+      const managerTokens = manager?.pushTokens || []; // Default to empty array
 
       const allTokens = [...ownerTokens, ...managerTokens];
 
@@ -384,7 +382,7 @@ router.post("/create/:userId", auth, async (req, res) => {
         message,
         type: "lead",
         from: userId,
-        to: owner._id,
+        to: owner?._id || null, // Handle missing owner
         route: "leads",
         body,
         screen,
@@ -395,7 +393,7 @@ router.post("/create/:userId", auth, async (req, res) => {
 
     res.status(201).json({
       message: "Lead created successfully.",
-      lead: savedLead,
+      lead: newLead, // Correctly reference the created lead
     });
   } catch (error) {
     console.error("Error creating lead:", error);
