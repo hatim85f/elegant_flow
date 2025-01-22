@@ -229,7 +229,7 @@ router.post("/create/:userId", auth, async (req, res) => {
       phone,
       address,
       relatedOrganization: user.organization,
-      relatedBranch,
+      relatedBranch: relatedBranch || null,
       source,
       assignedTo: assignedTo ? assignedTo : userId,
       approval,
