@@ -213,16 +213,7 @@ router.post("/create/:userId", auth, async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (
-      !name ||
-      !type ||
-      !email ||
-      !phone ||
-      !address ||
-      !relatedBranch ||
-      !source ||
-      !assignedTo
-    ) {
+    if (!name || !type || !email || !phone || !address) {
       return res
         .status(400)
         .json({ message: "All required fields must be provided." });
