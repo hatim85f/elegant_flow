@@ -104,6 +104,10 @@ router.get("/:userId", auth, async (req, res) => {
       },
     ]);
 
+    if (organization[0].branches[0].branchManager === null) {
+      organization[0].branches = [];
+    }
+
     return res.status(200).json({ organization: organization[0] });
   } catch (error) {
     return res.status(500).send({
