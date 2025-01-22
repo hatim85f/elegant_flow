@@ -261,16 +261,18 @@ router.post("/create/:userId", auth, async (req, res) => {
 
       const allTokens = [...assignedUserTokens, ...managerTokens];
 
-      for (const token of allTokens) {
-        await sendNotification(
-          token,
-          title,
-          body,
-          data,
-          "leads",
-          screen,
-          sound
-        );
+      if (allTokens.length > 0) {
+        for (const token of allTokens) {
+          await sendNotification(
+            token,
+            title,
+            body,
+            data,
+            "leads",
+            screen,
+            sound
+          );
+        }
       }
 
       const newNotification = new Notifications({
@@ -298,16 +300,18 @@ router.post("/create/:userId", auth, async (req, res) => {
 
       const allTokens = [...assignedUserTokens, ...ownerTokens];
 
-      for (const token of allTokens) {
-        await sendNotification(
-          token,
-          title,
-          body,
-          data,
-          "leads",
-          screen,
-          sound
-        );
+      if (allTokens.length > 0) {
+        for (const token of allTokens) {
+          await sendNotification(
+            token,
+            title,
+            body,
+            data,
+            "leads",
+            screen,
+            sound
+          );
+        }
       }
 
       const newNotification = new Notifications({
@@ -346,16 +350,18 @@ router.post("/create/:userId", auth, async (req, res) => {
 
       const allTokens = [...ownerTokens, ...managerTokens];
 
-      for (const token of allTokens) {
-        await sendNotification(
-          token,
-          title,
-          body,
-          data,
-          "leads",
-          screen,
-          sound
-        );
+      if (allTokens.length > 0) {
+        for (const token of allTokens) {
+          await sendNotification(
+            token,
+            title,
+            body,
+            data,
+            "leads",
+            screen,
+            sound
+          );
+        }
       }
 
       const newNotification = new Notifications({
