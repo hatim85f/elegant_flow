@@ -32,7 +32,6 @@ const LeadsSchema = Schema(
     relatedBranch: {
       type: Schema.Types.ObjectId,
       ref: "branches",
-      required: true,
     },
     source: {
       type: String,
@@ -50,7 +49,6 @@ const LeadsSchema = Schema(
     assignedTo: {
       type: Schema.Types.ObjectId,
       ref: "users",
-      required: true,
     },
     approval: {
       type: String,
