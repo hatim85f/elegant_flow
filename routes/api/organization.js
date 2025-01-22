@@ -40,24 +40,44 @@ router.get("/:userId", auth, async (req, res) => {
         },
       },
       {
-        $unwind: "$branchDetails", // Unwind the branchDetails array to process each branch individually
+        $addFields: {
+          branches: {
+            $cond: {
+              if: { $gt: [{ $size: "$branchDetails" }, 0] }, // Check if branchDetails has at least one branch
+              then: "$branchDetails", // Use branchDetails
+              else: [], // Otherwise, set branches to an empty array
+            },
+          },
+        },
+      },
+      {
+        $unwind: {
+          path: "$branches",
+          preserveNullAndEmptyArrays: true, // Preserve empty branches array
+        },
       },
       {
         $lookup: {
           from: "users", // Name of the users collection
-          localField: "branchDetails.branchManager", // Field in the branches collection referencing a user
+          localField: "branches.branchManager", // Field in the branches collection referencing a user
           foreignField: "_id", // Field in the users collection
           as: "branchManagerDetails", // Alias for the joined data
         },
       },
       {
         $addFields: {
-          "branchDetails.branchManager": {
-            $concat: [
-              { $arrayElemAt: ["$branchManagerDetails.firstName", 0] },
-              " ",
-              { $arrayElemAt: ["$branchManagerDetails.lastName", 0] },
-            ],
+          "branches.branchManager": {
+            $cond: {
+              if: { $gt: [{ $size: "$branchManagerDetails" }, 0] }, // Check if branchManagerDetails exists
+              then: {
+                $concat: [
+                  { $arrayElemAt: ["$branchManagerDetails.firstName", 0] },
+                  " ",
+                  { $arrayElemAt: ["$branchManagerDetails.lastName", 0] },
+                ],
+              },
+              else: null, // Otherwise, set branchManager to null
+            },
           },
         },
       },
@@ -68,7 +88,7 @@ router.get("/:userId", auth, async (req, res) => {
           logo: { $first: "$logo" },
           industry: { $first: "$industry" },
           website: { $first: "$website" },
-          branches: { $push: "$branchDetails" }, // Regroup branches into an array
+          branches: { $push: "$branches" }, // Regroup branches into an array
           address: { $first: "$address" },
         },
       },
