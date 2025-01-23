@@ -4,6 +4,7 @@ const router = express.Router();
 const User = require("../../models/User");
 const auth = require("../../middleware/auth");
 const Clients = require("../../models/Clients");
+const { default: mongoose } = require("mongoose");
 
 // get managers details for the onwer to submit employees
 router.get("/managers/:organization", auth, async (req, res) => {
@@ -51,9 +52,7 @@ router.get("/:userId", auth, async (req, res) => {
 
     const teamPipeline = [
       {
-        $match: isOwner
-          ? { role: "manager", organization: user.organization }
-          : { parentId: user._id },
+        $match: { parentId: new mongoose.Types.ObjectId(userId) },
       },
       {
         $lookup: {
