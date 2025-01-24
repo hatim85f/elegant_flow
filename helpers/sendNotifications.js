@@ -17,7 +17,7 @@ const sendNotification = async (
   data = {},
   route = "",
   screen = "",
-  sound = "notifications-sound.wav"
+  sound = "notifications_sound.wav"
 ) => {
   // Validate the push token
   if (!pushToken || !pushToken.startsWith("ExponentPushToken")) {
