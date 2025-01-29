@@ -7,6 +7,8 @@ const auth = require("../../middleware/auth");
 const isCompanyAdmin = require("../../middleware/isCompanyAdmin");
 const { check, validationResult } = require("express-validator");
 const User = require("../../models/User");
+const Client = require("../../models/Client");
+const Project = require("../../models/Project");
 const Organization = require("../../models/Organization");
 
 const sgMail = require("@sendgrid/mail");
@@ -461,6 +463,45 @@ router.put("/edit/:userId", async (req, res) => {
   );
 
   return res.status(200).send(updatedUser);
+});
+
+// delete user account
+// if the user is the owner of the organization, the organization will be deleted as well the team
+router.delete("/:userId", auth, async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findOne({ _id: userId });
+
+    if (!user) {
+      return res.status(404).send({
+        error: "ERROR!",
+        message: "User not found",
+      });
+    }
+
+    if (user.role === "owner") {
+      await Organization.deleteOne({ _id: user.organization });
+    }
+
+    await User.deleteOne({ _id: userId });
+
+    // delete users from the organization who have user.organization as their organization
+    // as well as clients and projects
+
+    await User.deleteMany({ organization: user.organization });
+    await Client.deleteMany({ organization: user.organization });
+    await Project.deleteMany({ organization: user.organization });
+
+    return res.status(200).send({
+      message: "Your account deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).send({
+      error: "ERROR!",
+      message: error.message,
+    });
+  }
 });
 
 module.exports = router;
