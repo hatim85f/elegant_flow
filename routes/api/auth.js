@@ -7,8 +7,8 @@ const auth = require("../../middleware/auth");
 const isCompanyAdmin = require("../../middleware/isCompanyAdmin");
 const { check, validationResult } = require("express-validator");
 const User = require("../../models/User");
-const Client = require("../../models/Client");
-const Project = require("../../models/Project");
+const Clients = require("../../models/Clients");
+const Projects = require("../../models/Projects");
 const Organization = require("../../models/Organization");
 
 const sgMail = require("@sendgrid/mail");
@@ -490,8 +490,8 @@ router.delete("/:userId", auth, async (req, res) => {
     // as well as clients and projects
 
     await User.deleteMany({ organization: user.organization });
-    await Client.deleteMany({ organization: user.organization });
-    await Project.deleteMany({ organization: user.organization });
+    await Clients.deleteMany({ organization: user.organization });
+    await Projects.deleteMany({ organization: user.organization });
 
     return res.status(200).send({
       message: "Your account deleted successfully",
