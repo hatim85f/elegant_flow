@@ -19,7 +19,7 @@ const BranchSchema = Schema({
   branchManager: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "user",
-    required: false,
+    default: null,
   },
   branchForOrganization: {
     type: mongoose.Schema.Types.ObjectId,
