@@ -152,7 +152,9 @@ router.put("/:userId/:organizationId", auth, async (req, res) => {
                     branch.branchContact || existingBranch.branchContact,
                   branchEmail: branch.branchEmail || existingBranch.branchEmail,
                   branchManager:
-                    branch.branchManager || existingBranch.branchManager,
+                    branch.branchManager !== undefined
+                      ? branch.branchManager
+                      : existingBranch.branchManager,
                 },
               }
             )
@@ -164,7 +166,7 @@ router.put("/:userId/:organizationId", auth, async (req, res) => {
             branchLocation: branch.branchLocation,
             branchContact: branch.branchContact,
             branchEmail: branch.branchEmail,
-            branchManager: branch.branchManager,
+            branchManager: branch.branchManager || null, // Allow empty manager
             branchForOrganization: organizationId,
           });
           organizationBranches.push(newBranch);
